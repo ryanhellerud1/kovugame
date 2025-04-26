@@ -81,41 +81,10 @@
         .touch-button:active { background-color: rgba(255, 255, 255, 0.6); transform: scale(0.95); }
 
         /* Joystick Styles */
-        #joystick-area {
-            width: 120px; /* Area for the joystick */
-            height: 120px;
-            position: relative;
-            pointer-events: auto; /* Enable touch on this area */
-            border-radius: 50%; /* Optional: visual guide */
-            /* background-color: rgba(255, 255, 255, 0.1); */ /* Optional visual guide */
-        }
-        #joystick-base {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background-color: rgba(80, 80, 80, 0.3);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            top: 0;
-            left: 0;
-        }
-        #joystick-knob {
-            position: absolute;
-            width: 55px; /* Size of the draggable knob */
-            height: 55px;
-            background-color: rgba(200, 200, 200, 0.5);
-            border: 2px solid rgba(255, 255, 255, 0.7);
-            border-radius: 50%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%); /* Center initially */
-            pointer-events: none; /* Knob doesn't capture events directly */
-            transition: background-color 0.1s ease; /* Smooth transition */
-        }
-         #joystick-area.active #joystick-knob {
-             background-color: rgba(255, 255, 255, 0.6); /* Highlight when active */
-         }
-
+        #joystick-area { width: 120px; height: 120px; position: relative; pointer-events: auto; border-radius: 50%; }
+        #joystick-base { position: absolute; width: 100%; height: 100%; border-radius: 50%; background-color: rgba(80, 80, 80, 0.3); border: 2px solid rgba(255, 255, 255, 0.3); top: 0; left: 0; }
+        #joystick-knob { position: absolute; width: 55px; height: 55px; background-color: rgba(200, 200, 200, 0.5); border: 2px solid rgba(255, 255, 255, 0.7); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; transition: background-color 0.1s ease; }
+        #joystick-area.active #joystick-knob { background-color: rgba(255, 255, 255, 0.6); }
 
         #action-buttons { display: flex; gap: 15px; pointer-events: auto; }
 
@@ -191,9 +160,9 @@
         let joystickActive = false;
         let joystickStartX = 0;
         let joystickStartY = 0;
-        const joystickRadius = joystickArea.offsetWidth / 2; // Radius of the base
-        const knobRadius = joystickKnob.offsetWidth / 2;
-        const maxJoystickDist = joystickRadius - knobRadius; // Max distance knob can move from center
+        let joystickRadius = 0; // Will be calculated on load/resize
+        let knobRadius = 0;     // Will be calculated on load/resize
+        let maxJoystickDist = 0;// Will be calculated on load/resize
 
         // --- Level Configuration --- (Unchanged)
         const levelConfigs = [ { level: 1, numRivals: 3, numCollectibles: 5, targetXRatio: 0.85, targetYRatio: 0.8, objectiveText: "Objective: Reach the Viral Stage!", rivalSpeedMultiplier: 1.0, rivalHazardCooldownBase: 3500 }, { level: 2, numRivals: 4, numCollectibles: 7, targetXRatio: 0.15, targetYRatio: 0.2, objectiveText: "Objective: Reach the Upload Point!", rivalSpeedMultiplier: 1.1, rivalHazardCooldownBase: 3000 } ];
@@ -217,7 +186,33 @@
         function createDisintegrationEffect(x, y, count = 20) { for (let i = 0; i < count; i++) { const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 2 + 1; particles.push({ x: x, y: y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, radius: Math.random() * 2.5 + 1, color: `rgba(${240 + Math.random() * 15}, ${190 + Math.random() * 30}, ${15 + Math.random() * 30}, ${0.8 + Math.random() * 0.2})`, life: 20 + Math.random() * 20, initialLife: 40 }); } }
         function spawnCollectibles(levelConf) { /* ... Unchanged ... */ collectibles.length = 0; totalCollectibles = levelConf.numCollectibles; collectiblesCollected = 0; isTargetZoneActive = false; for (let i = 0; i < totalCollectibles; i++) { let placed = false; while (!placed) { const potentialX = collectibleRadius + Math.random() * (canvasWidth - collectibleRadius * 2); const potentialY = collectibleRadius + Math.random() * (canvasHeight - collectibleRadius * 2); const distToPlayerStart = Math.sqrt(Math.pow(potentialX - canvasWidth / 4, 2) + Math.pow(potentialY - canvasHeight / 2, 2)); const distToTarget = Math.sqrt(Math.pow(potentialX - targetZone.x, 2) + Math.pow(potentialY - targetZone.y, 2)); let tooCloseToRivalStart = false; for(const r of rivals) { if (!r.isDestroyed) { const distToRival = Math.sqrt(Math.pow(potentialX - r.startX, 2) + Math.pow(potentialY - r.startY, 2)); if (distToRival < r.width * 2) { tooCloseToRivalStart = true; break; } } } if (distToPlayerStart > player.width * 2 && distToTarget > targetZone.radius * 1.5 && !tooCloseToRivalStart) { collectibles.push({ x: potentialX, y: potentialY, radius: collectibleRadius, collected: false }); placed = true; } } } console.log(`Level ${levelConf.level}: Spawned ${collectibles.length} Collectibles`); updateObjectiveText(); }
         function updateObjectiveText() { /* ... Unchanged ... */ if (isTargetZoneActive) { objectiveDisplay.textContent = levelConfigs[currentLevel - 1].objectiveText; } else { objectiveDisplay.textContent = `Collect Data! (${collectiblesCollected}/${totalCollectibles})`; } }
-        async function setupGame(levelIndex) { /* ... Unchanged ... */ const levelConf = levelConfigs[levelIndex]; if (!levelConf) { console.error("Invalid level index:", levelIndex); gameState = 'win'; winMessage.style.display = 'flex'; winMessage.style.opacity = 1; return; } console.log(`Setting up Level ${levelConf.level}`); currentLevel = levelConf.level; canvasWidth = gameContainer.clientWidth; canvasHeight = gameContainer.clientHeight; canvas.width = canvasWidth; canvas.height = canvasHeight; levelIndicator.textContent = `Level: ${levelConf.level}`; /* objectiveDisplay updated in spawnCollectibles */ player.x = canvasWidth / 4; player.y = canvasHeight / 2; player.lastMoveDx = 1; player.lastMoveDy = 0; targetZone.x = canvasWidth * levelConf.targetXRatio; targetZone.y = canvasHeight * levelConf.targetYRatio; if (!player.img) player.img = await loadSvg(player.svg, player.width, player.height); if (!rivalImg) rivalImg = await loadSvg(rivalSvg, 38, 38); rivals.length = 0; document.querySelectorAll('.dogen-hazard').forEach(el => el.remove()); particles.length = 0; for (let i = 0; i < levelConf.numRivals; i++) { const startX = canvasWidth * (0.5 + Math.random() * 0.3); const startY = canvasHeight * (0.15 + Math.random() * 0.7); const patrolRange = 70 + Math.random() * 60; const speed = rivalBaseSpeed * levelConf.rivalSpeedMultiplier * (0.8 + Math.random() * 0.4); const hazardCooldown = levelConf.rivalHazardCooldownBase; const hazardRandomDelay = Math.random() * 1500; const hazardElement = document.createElement('div'); hazardElement.className = 'dogen-hazard'; hazardElement.style.width = `${rivalHazardRadius * 2}px`; hazardElement.style.height = `${rivalHazardRadius * 2}px`; gameContainer.appendChild(hazardElement); rivals.push({ x: startX, y: startY, width: 38, height: 38, speed: speed, direction: Math.random() < 0.5 ? 1 : -1, patrolRange: patrolRange, startX: startX, startY: startY, img: rivalImg, hazardActive: false, isInWarning: false, lastHazardTime: Date.now() - Math.random() * hazardCooldown, hazardElement: hazardElement, hazardFeedbackGiven: false, dodgeFeedbackGiven: false, isDestroyed: false, hazardCooldown: hazardCooldown, hazardTimer: hazardCooldown + hazardRandomDelay, hazardTargetX: 0, hazardTargetY: 0 }); } console.log(`Level ${levelConf.level}: Initialized ${rivals.length} Rivals`); if (!targetZone.element) { targetZone.element = document.createElement('div'); targetZone.element.className = 'target-zone'; gameContainer.appendChild(targetZone.element); } targetZone.element.style.left = `${targetZone.x - targetZone.radius}px`; targetZone.element.style.top = `${targetZone.y - targetZone.radius}px`; targetZone.element.style.width = `${targetZone.radius * 2}px`; targetZone.element.style.height = `${targetZone.radius * 2}px`; targetZone.element.classList.remove('active'); spawnCollectibles(levelConf); console.log(`Level ${levelConf.level} setup complete.`); }
+
+        // setupGame calculates joystick dimensions
+        async function setupGame(levelIndex) {
+            const levelConf = levelConfigs[levelIndex];
+            if (!levelConf) { console.error("Invalid level index:", levelIndex); gameState = 'win'; winMessage.style.display = 'flex'; winMessage.style.opacity = 1; return; }
+            console.log(`Setting up Level ${levelConf.level}`); currentLevel = levelConf.level;
+            canvasWidth = gameContainer.clientWidth; canvasHeight = gameContainer.clientHeight;
+            canvas.width = canvasWidth; canvas.height = canvasHeight;
+            levelIndicator.textContent = `Level: ${levelConf.level}`;
+            player.x = canvasWidth / 4; player.y = canvasHeight / 2; player.lastMoveDx = 1; player.lastMoveDy = 0;
+            targetZone.x = canvasWidth * levelConf.targetXRatio; targetZone.y = canvasHeight * levelConf.targetYRatio;
+            if (!player.img) player.img = await loadSvg(player.svg, player.width, player.height);
+            if (!rivalImg) rivalImg = await loadSvg(rivalSvg, 38, 38);
+            rivals.length = 0; document.querySelectorAll('.dogen-hazard').forEach(el => el.remove()); particles.length = 0;
+            for (let i = 0; i < levelConf.numRivals; i++) { const startX = canvasWidth * (0.5 + Math.random() * 0.3); const startY = canvasHeight * (0.15 + Math.random() * 0.7); const patrolRange = 70 + Math.random() * 60; const speed = rivalBaseSpeed * levelConf.rivalSpeedMultiplier * (0.8 + Math.random() * 0.4); const hazardCooldown = levelConf.rivalHazardCooldownBase; const hazardRandomDelay = Math.random() * 1500; const hazardElement = document.createElement('div'); hazardElement.className = 'dogen-hazard'; hazardElement.style.width = `${rivalHazardRadius * 2}px`; hazardElement.style.height = `${rivalHazardRadius * 2}px`; gameContainer.appendChild(hazardElement); rivals.push({ x: startX, y: startY, width: 38, height: 38, speed: speed, direction: Math.random() < 0.5 ? 1 : -1, patrolRange: patrolRange, startX: startX, startY: startY, img: rivalImg, hazardActive: false, isInWarning: false, lastHazardTime: Date.now() - Math.random() * hazardCooldown, hazardElement: hazardElement, hazardFeedbackGiven: false, dodgeFeedbackGiven: false, isDestroyed: false, hazardCooldown: hazardCooldown, hazardTimer: hazardCooldown + hazardRandomDelay, hazardTargetX: 0, hazardTargetY: 0 }); }
+            console.log(`Level ${levelConf.level}: Initialized ${rivals.length} Rivals`);
+            if (!targetZone.element) { targetZone.element = document.createElement('div'); targetZone.element.className = 'target-zone'; gameContainer.appendChild(targetZone.element); }
+            targetZone.element.style.left = `${targetZone.x - targetZone.radius}px`; targetZone.element.style.top = `${targetZone.y - targetZone.radius}px`; targetZone.element.style.width = `${targetZone.radius * 2}px`; targetZone.element.style.height = `${targetZone.radius * 2}px`;
+            targetZone.element.classList.remove('active');
+            spawnCollectibles(levelConf);
+            // Calculate joystick dimensions after layout is stable
+            joystickRadius = joystickArea.offsetWidth / 2;
+            knobRadius = joystickKnob.offsetWidth / 2;
+            maxJoystickDist = joystickRadius - knobRadius;
+            console.log(`Level ${levelConf.level} setup complete. Joystick Radius: ${joystickRadius}`);
+        }
+
         window.addEventListener('resize', () => { if (gameState === 'playing' || gameState === 'level_transition') { setupGame(currentLevel - 1); } });
         function showIntroPanel(panelNumber) { /* ... Unchanged ... */ console.log("Showing intro panel:", panelNumber); document.querySelectorAll('.intro-panel').forEach(p => p.classList.remove('active')); const nextPanel = document.getElementById(`intro-${panelNumber}`); if (nextPanel) { nextPanel.classList.add('active'); } else { console.error("Could not find intro panel:", panelNumber); } }
         function startGame() { /* ... Unchanged ... */ console.log("startGame function called"); currentLevel = 1; if (Tone.context.state !== 'running') { Tone.start().then(() => { console.log("AudioContext started!"); setupSounds(); proceedWithGameStart(); }).catch(e => { console.error("Tone.start() failed:", e); proceedWithGameStart(); }); } else { if (!soundsReady) setupSounds(); proceedWithGameStart(); } }
@@ -230,38 +225,16 @@
         window.addEventListener('keydown', (e) => { const key = e.key.toLowerCase(); keys[key] = true; if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "e"].includes(key)) { e.preventDefault(); } if (key === 'e' && gameState === 'playing' && !player.isFiringLaser && Date.now() - player.lastLaserTime > player.laserCooldown) { fireLaser(); } });
         window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
 
-        // --- Touch Handling (Action Buttons) ---
-        function handleActionTouchStart(event) {
-            event.preventDefault();
-            const targetId = event.target.id;
-            if (targetId === 'btn-dash') {
-                keys[' '] = true; // Simulate space press
-            } else if (targetId === 'btn-laser') {
-                // Trigger laser directly on touch, respecting cooldown
-                if (gameState === 'playing' && !player.isFiringLaser && Date.now() - player.lastLaserTime > player.laserCooldown) {
-                    fireLaser();
-                }
-            }
-        }
-        function handleActionTouchEnd(event) {
-            event.preventDefault();
-            const targetId = event.target.id;
-             if (targetId === 'btn-dash') {
-                keys[' '] = false; // Simulate space release
-            }
-            // No action needed for laser on touchend
-        }
-        btnDash.addEventListener('touchstart', handleActionTouchStart, { passive: false });
-        btnLaser.addEventListener('touchstart', handleActionTouchStart, { passive: false });
-        btnDash.addEventListener('touchend', handleActionTouchEnd, { passive: false });
-        btnLaser.addEventListener('touchend', handleActionTouchEnd, { passive: false });
+        // --- Touch Handling (Action Buttons) --- (Unchanged)
+        function handleActionTouchStart(event) { event.preventDefault(); const targetId = event.target.id; if (targetId === 'btn-dash') { keys[' '] = true; } else if (targetId === 'btn-laser') { if (gameState === 'playing' && !player.isFiringLaser && Date.now() - player.lastLaserTime > player.laserCooldown) { fireLaser(); } } }
+        function handleActionTouchEnd(event) { event.preventDefault(); const targetId = event.target.id; if (targetId === 'btn-dash') { keys[' '] = false; } }
+        btnDash.addEventListener('touchstart', handleActionTouchStart, { passive: false }); btnLaser.addEventListener('touchstart', handleActionTouchStart, { passive: false }); btnDash.addEventListener('touchend', handleActionTouchEnd, { passive: false }); btnLaser.addEventListener('touchend', handleActionTouchEnd, { passive: false });
 
-
-        // --- Joystick Touch Handling ---
+        // --- Joystick Touch Handling (Updated for Diagonal) ---
         joystickArea.addEventListener('touchstart', (e) => {
             e.preventDefault();
             joystickActive = true;
-            joystickArea.classList.add('active'); // Visual feedback
+            joystickArea.classList.add('active');
             const touch = e.changedTouches[0];
             joystickStartX = touch.clientX;
             joystickStartY = touch.clientY;
@@ -274,61 +247,48 @@
             const touch = e.changedTouches[0];
             const currentX = touch.clientX;
             const currentY = touch.clientY;
-
-            // Calculate displacement relative to joystick *area* center for angle/magnitude
             const areaRect = joystickArea.getBoundingClientRect();
             const areaCenterX = areaRect.left + areaRect.width / 2;
             const areaCenterY = areaRect.top + areaRect.height / 2;
-
             let dx = currentX - areaCenterX;
             let dy = currentY - areaCenterY;
             const dist = Math.sqrt(dx * dx + dy * dy);
             const angle = Math.atan2(dy, dx);
-
-            // Clamp distance for visual knob movement
             const clampedDist = Math.min(dist, maxJoystickDist);
             const knobX = clampedDist * Math.cos(angle);
             const knobY = clampedDist * Math.sin(angle);
-
-            // Update knob position (relative to its center)
             joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
 
-            // --- Determine movement direction based on angle and distance threshold ---
-            const deadZone = maxJoystickDist * 0.2; // Ignore small movements near center
+            // --- Determine movement direction (Allowing Diagonals) ---
+            const deadZone = maxJoystickDist * 0.2;
             keys['arrowup'] = false;
             keys['arrowdown'] = false;
             keys['arrowleft'] = false;
             keys['arrowright'] = false;
 
             if (clampedDist > deadZone) {
-                // Determine primary direction based on angle
-                // Angles in radians: Right=0, Down=PI/2, Left=PI, Up=-PI/2 (or 3PI/2)
-                if (angle > -Math.PI * 0.75 && angle <= -Math.PI * 0.25) { // Up
+                // Check vertical component
+                if (dy < -deadZone * 0.5) { // Threshold for vertical movement
                     keys['arrowup'] = true;
-                } else if (angle > Math.PI * 0.25 && angle <= Math.PI * 0.75) { // Down
+                } else if (dy > deadZone * 0.5) {
                     keys['arrowdown'] = true;
-                } else if (angle > Math.PI * 0.75 || angle <= -Math.PI * 0.75) { // Left
+                }
+                // Check horizontal component
+                if (dx < -deadZone * 0.5) { // Threshold for horizontal movement
                     keys['arrowleft'] = true;
-                } else if (angle > -Math.PI * 0.25 && angle <= Math.PI * 0.25) { // Right
+                } else if (dx > deadZone * 0.5) {
                     keys['arrowright'] = true;
                 }
             }
-
         }, { passive: false });
 
         joystickArea.addEventListener('touchend', (e) => {
             e.preventDefault();
             if (!joystickActive) return;
-
             joystickActive = false;
             joystickArea.classList.remove('active');
-            // Reset knob position
             joystickKnob.style.transform = `translate(-50%, -50%)`;
-            // Reset all movement keys
-            keys['arrowup'] = false;
-            keys['arrowdown'] = false;
-            keys['arrowleft'] = false;
-            keys['arrowright'] = false;
+            keys['arrowup'] = false; keys['arrowdown'] = false; keys['arrowleft'] = false; keys['arrowright'] = false;
         }, { passive: false });
 
 
@@ -388,7 +348,7 @@
              setupGame(currentLevel - 1);
              // Add touch listeners after DOM is loaded
              joystickArea.addEventListener('touchstart', (e) => { e.preventDefault(); joystickActive = true; joystickArea.classList.add('active'); const touch = e.changedTouches[0]; joystickStartX = touch.clientX; joystickStartY = touch.clientY; }, { passive: false });
-             joystickArea.addEventListener('touchmove', (e) => { e.preventDefault(); if (!joystickActive) return; const touch = e.changedTouches[0]; const currentX = touch.clientX; const currentY = touch.clientY; const areaRect = joystickArea.getBoundingClientRect(); const areaCenterX = areaRect.left + areaRect.width / 2; const areaCenterY = areaRect.top + areaRect.height / 2; let dx = currentX - areaCenterX; let dy = currentY - areaCenterY; const dist = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxJoystickDist); const knobX = clampedDist * Math.cos(angle); const knobY = clampedDist * Math.sin(angle); joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`; const deadZone = maxJoystickDist * 0.2; keys['arrowup'] = false; keys['arrowdown'] = false; keys['arrowleft'] = false; keys['arrowright'] = false; if (clampedDist > deadZone) { if (angle > -Math.PI * 0.75 && angle <= -Math.PI * 0.25) { keys['arrowup'] = true; } else if (angle > Math.PI * 0.25 && angle <= Math.PI * 0.75) { keys['arrowdown'] = true; } else if (angle > Math.PI * 0.75 || angle <= -Math.PI * 0.75) { keys['arrowleft'] = true; } else if (angle > -Math.PI * 0.25 && angle <= Math.PI * 0.25) { keys['arrowright'] = true; } } }, { passive: false });
+             joystickArea.addEventListener('touchmove', (e) => { e.preventDefault(); if (!joystickActive) return; const touch = e.changedTouches[0]; const currentX = touch.clientX; const currentY = touch.clientY; const areaRect = joystickArea.getBoundingClientRect(); const areaCenterX = areaRect.left + areaRect.width / 2; const areaCenterY = areaRect.top + areaRect.height / 2; let dx = currentX - areaCenterX; let dy = currentY - areaCenterY; const dist = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxJoystickDist); const knobX = clampedDist * Math.cos(angle); const knobY = clampedDist * Math.sin(angle); joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`; const deadZone = maxJoystickDist * 0.2; keys['arrowup'] = false; keys['arrowdown'] = false; keys['arrowleft'] = false; keys['arrowright'] = false; if (clampedDist > deadZone) { if (dy < -deadZone * 0.5) { keys['arrowup'] = true; } else if (dy > deadZone * 0.5) { keys['arrowdown'] = true; } if (dx < -deadZone * 0.5) { keys['arrowleft'] = true; } else if (dx > deadZone * 0.5) { keys['arrowright'] = true; } } }, { passive: false });
              joystickArea.addEventListener('touchend', (e) => { e.preventDefault(); if (!joystickActive) return; joystickActive = false; joystickArea.classList.remove('active'); joystickKnob.style.transform = `translate(-50%, -50%)`; keys['arrowup'] = false; keys['arrowdown'] = false; keys['arrowleft'] = false; keys['arrowright'] = false; }, { passive: false });
              btnDash.addEventListener('touchstart', handleActionTouchStart, { passive: false });
              btnLaser.addEventListener('touchstart', handleActionTouchStart, { passive: false });
