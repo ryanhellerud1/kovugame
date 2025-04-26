@@ -267,7 +267,36 @@
             console.log(`Level ${levelConf.level}: Initialized Rivals Array:`, JSON.parse(JSON.stringify(rivals))); // Log created rivals
             if (!targetZone.element) { targetZone.element = document.createElement('div'); targetZone.element.className = 'target-zone'; gameContainer.appendChild(targetZone.element); } targetZone.element.style.left = `${targetZone.x - targetZone.radius}px`; targetZone.element.style.top = `${targetZone.y - targetZone.radius}px`; targetZone.element.style.width = `${targetZone.radius * 2}px`; targetZone.element.style.height = `${targetZone.radius * 2}px`; targetZone.element.classList.remove('active'); spawnCollectibles(levelConf); joystickDimensionsCalculated = false; console.log(`Level ${levelConf.level} setup complete.`); }
         window.addEventListener('resize', () => { if (gameState === 'playing' || gameState === 'level_transition') { setupGame(currentLevel - 1); } });
-        function showIntroPanel(panelNumber) { /* ... Unchanged ... */ console.log("Showing intro panel:", panelNumber); document.querySelectorAll('.intro-panel').forEach(p => p.classList.remove('active')); const nextPanel = document.getElementById(`intro-${panelNumber}`); if (nextPanel) { nextPanel.classList.add('active'); } else { console.error("Could not find intro panel:", panelNumber); } }
+        // Enhanced intro panel handling with touch support
+        function showIntroPanel(panelNumber) {
+            console.log("Showing intro panel:", panelNumber);
+            document.querySelectorAll('.intro-panel').forEach(p => p.classList.remove('active'));
+            const nextPanel = document.getElementById(`intro-${panelNumber}`);
+            if (nextPanel) {
+                nextPanel.classList.add('active');
+            } else {
+                console.error("Could not find intro panel:", panelNumber);
+            }
+        }
+
+        // Add touch handling for intro buttons
+        function setupIntroTouchHandlers() {
+            const introButtons = document.querySelectorAll('#intro-overlay button');
+            introButtons.forEach(button => {
+                button.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const onClick = button.getAttribute('onclick');
+                    if (onClick) {
+                        if (onClick.includes('showIntroPanel')) {
+                            const panelNum = onClick.match(/\d+/)[0];
+                            showIntroPanel(parseInt(panelNum));
+                        } else if (onClick.includes('startGame')) {
+                            startGame();
+                        }
+                    }
+                }, { passive: false });
+            });
+        }
         function startGame() { /* ... Unchanged ... */ console.log("startGame function called"); currentLevel = 1; if (Tone.context.state !== 'running') { Tone.start().then(() => { console.log("AudioContext started!"); setupSounds(); proceedWithGameStart(); }).catch(e => { console.error("Tone.start() failed:", e); proceedWithGameStart(); }); } else { if (!soundsReady) setupSounds(); proceedWithGameStart(); } }
         function proceedWithGameStart() {
             console.log("Proceeding with game start...");
@@ -561,6 +590,10 @@
              // Add game area tap handler
              gameContainer.addEventListener('touchstart', handleGameAreaTap, { passive: false });
              console.log("Game area tap handler added.");
+             
+             // Setup intro touch handlers
+             setupIntroTouchHandlers();
+             console.log("Intro touch handlers added.");
         };
 
     </script>
