@@ -165,10 +165,26 @@
     <div id="game-wrapper">
         <div id="game-container">
             <div id="intro-overlay">
-                 <div class="intro-panel active" id="intro-1"> <img src="https://placehold.co/400x200/333333/cccccc?text=Abandoned+Kovu" alt="Abandoned Kovu" onerror="this.src='https://placehold.co/400x200/333333/cccccc?text=Image+Error'"> <p>Abandoned... like a delisted coin. Colors faded, feeling worthless...</p> <button onclick="showIntroPanel(2)">Next</button> </div>
-                 <div class="intro-panel" id="intro-2"> <img src="https://placehold.co/400x200/555555/dddddd?text=KCC+Rescue" alt="KCC Rescue" onerror="this.src='https://placehold.co/400x200/555555/dddddd?text=Image+Error'"> <p>"Subject Kovu located. Vital signs critical. Initiating community rescue protocol." The KCC found me.</p> <button onclick="showIntroPanel(3)">Next</button> </div>
-                 <div class="intro-panel" id="intro-3"> <img src="https://placehold.co/400x200/1a1a2e/00ffff?text=Upgrade+Bay" alt="Upgrade Bay" onerror="this.src='https://placehold.co/400x200/1a1a2e/00ffff?text=Image+Error'"> <p>"The Community pooled resources... gave you upgrades! This 'Community Link' keeps us connected. Think of it as your personal live feed!"</p> <button onclick="showIntroPanel(4)">Next</button> </div>
-                 <div class="intro-panel" id="intro-4"> <img src="https://placehold.co/400x200/0f3460/ffffff?text=Entering+Arena" alt="Entering Arena" onerror="this.src='https://placehold.co/400x200/0f3460/ffffff?text=Image+Error'"> <p>"Go out there, engage, climb the ranks! We'll be watching. Make us proud!" ... A second chance?</p> <button onclick="startGame()">Enter the Arena!</button> </div>
+                 <div class="intro-panel active" id="intro-1" data-panel="1">
+                     <img src="https://placehold.co/400x200/333333/cccccc?text=Abandoned+Kovu" alt="Abandoned Kovu" onerror="this.src='https://placehold.co/400x200/333333/cccccc?text=Image+Error'">
+                     <p>Abandoned... like a delisted coin. Colors faded, feeling worthless...</p>
+                     <button data-next="2">Next</button>
+                 </div>
+                 <div class="intro-panel" id="intro-2" data-panel="2">
+                     <img src="https://placehold.co/400x200/555555/dddddd?text=KCC+Rescue" alt="KCC Rescue" onerror="this.src='https://placehold.co/400x200/555555/dddddd?text=Image+Error'">
+                     <p>"Subject Kovu located. Vital signs critical. Initiating community rescue protocol." The KCC found me.</p>
+                     <button data-next="3">Next</button>
+                 </div>
+                 <div class="intro-panel" id="intro-3" data-panel="3">
+                     <img src="https://placehold.co/400x200/1a1a2e/00ffff?text=Upgrade+Bay" alt="Upgrade Bay" onerror="this.src='https://placehold.co/400x200/1a1a2e/00ffff?text=Image+Error'">
+                     <p>"The Community pooled resources... gave you upgrades! This 'Community Link' keeps us connected. Think of it as your personal live feed!"</p>
+                     <button data-next="4">Next</button>
+                 </div>
+                 <div class="intro-panel" id="intro-4" data-panel="4">
+                     <img src="https://placehold.co/400x200/0f3460/ffffff?text=Entering+Arena" alt="Entering Arena" onerror="this.src='https://placehold.co/400x200/0f3460/ffffff?text=Image+Error'">
+                     <p>"Go out there, engage, climb the ranks! We'll be watching. Make us proud!" ... A second chance?</p>
+                     <button data-next="start">Enter the Arena!</button>
+                 </div>
             </div>
             <div id="level-transition-overlay"><h2>Level Complete!</h2><p>Prepare for the next challenge...</p></div>
             <div id="game-over-overlay"><h2>Game Over!</h2><p>Community approval dropped too low. Try again?</p><button onclick="startGame()">Restart</button></div>
@@ -269,34 +285,120 @@
         window.addEventListener('resize', () => { if (gameState === 'playing' || gameState === 'level_transition') { setupGame(currentLevel - 1); } });
         // Enhanced intro panel handling with touch support
         function showIntroPanel(panelNumber) {
-            console.log("Showing intro panel:", panelNumber);
-            document.querySelectorAll('.intro-panel').forEach(p => p.classList.remove('active'));
-            const nextPanel = document.getElementById(`intro-${panelNumber}`);
-            if (nextPanel) {
-                nextPanel.classList.add('active');
-            } else {
-                console.error("Could not find intro panel:", panelNumber);
-            }
-        }
-
-        // Add touch handling for intro buttons
-        function setupIntroTouchHandlers() {
-            const introButtons = document.querySelectorAll('#intro-overlay button');
-            introButtons.forEach(button => {
-                button.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    const onClick = button.getAttribute('onclick');
-                    if (onClick) {
-                        if (onClick.includes('showIntroPanel')) {
-                            const panelNum = onClick.match(/\d+/)[0];
-                            showIntroPanel(parseInt(panelNum));
-                        } else if (onClick.includes('startGame')) {
-                            startGame();
-                        }
+                    console.log("Transitioning to intro panel:", panelNumber);
+                    
+                    const currentPanel = document.querySelector('.intro-panel.active');
+                    const nextPanel = document.querySelector(`.intro-panel[data-panel="${panelNumber}"]`);
+                    
+                    if (!nextPanel) {
+                        console.error("Could not find panel:", panelNumber);
+                        return;
                     }
-                }, { passive: false });
-            });
-        }
+                    
+                    // Fade out current panel
+                    if (currentPanel) {
+                        currentPanel.style.opacity = '0';
+                        setTimeout(() => {
+                            currentPanel.style.display = 'none';
+                            currentPanel.classList.remove('active');
+                            
+                            // Show next panel
+                            nextPanel.style.display = 'block';
+                            // Force reflow
+                            nextPanel.offsetHeight;
+                            nextPanel.classList.add('active');
+                            nextPanel.style.opacity = '1';
+                            console.log("Panel transition complete:", nextPanel.dataset.panel);
+                        }, 300);
+                    }
+                }
+        
+                function setupIntroTouchHandlers() {
+                    // Add CSS for smooth transitions
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        .intro-panel {
+                            transition: opacity 0.3s ease;
+                            opacity: 0;
+                            pointer-events: none;
+                            display: none;
+                        }
+                        .intro-panel.active {
+                            opacity: 1;
+                            pointer-events: auto;
+                            display: block;
+                        }
+                        #intro-overlay button {
+                            transition: transform 0.2s ease;
+                            cursor: pointer;
+                            padding: 10px 20px;
+                            background: linear-gradient(45deg, #f95738, #ff8c42);
+                            border: none;
+                            border-radius: 8px;
+                            color: white;
+                            font-family: 'Press Start 2P', cursive;
+                            font-size: 0.8rem;
+                            text-transform: uppercase;
+                        }
+                        #intro-overlay button:active {
+                            transform: scale(0.95);
+                        }
+                    `;
+                    document.head.appendChild(style);
+        
+                    // Set initial panel state
+                    const initialPanel = document.querySelector('.intro-panel.active');
+                    if (initialPanel) {
+                        initialPanel.style.display = 'block';
+                        initialPanel.style.opacity = '1';
+                    }
+        
+                    // Handle button clicks
+                    const introButtons = document.querySelectorAll('#intro-overlay button');
+                    introButtons.forEach(button => {
+                        const handleClick = (e) => {
+                            e.preventDefault();
+                            const currentPanel = button.closest('.intro-panel');
+                            if (!currentPanel || !currentPanel.classList.contains('active')) {
+                                console.log("Invalid click - panel not active");
+                                return;
+                            }
+                            
+                            const nextAction = button.dataset.next;
+                            console.log("Next action:", nextAction);
+                            
+                            if (nextAction === 'start') {
+                                console.log("Starting game from final panel");
+                                currentPanel.style.opacity = '0';
+                                setTimeout(() => {
+                                    currentPanel.style.display = 'none';
+                                    currentPanel.classList.remove('active');
+                                    startGame();
+                                }, 300);
+                            } else {
+                                const nextPanelNumber = parseInt(nextAction);
+                                if (!isNaN(nextPanelNumber)) {
+                                    showIntroPanel(nextPanelNumber);
+                                }
+                            }
+                        };
+        
+                        // Add both touch and click handlers with debounce
+                        let isHandling = false;
+                        const debouncedHandler = (e) => {
+                            if (isHandling) {
+                                console.log("Ignoring click - already handling");
+                                return;
+                            }
+                            isHandling = true;
+                            handleClick(e);
+                            setTimeout(() => { isHandling = false; }, 300);
+                        };
+        
+                        button.addEventListener('touchstart', debouncedHandler, { passive: false });
+                        button.addEventListener('click', debouncedHandler);
+                    });
+                }
         function startGame() { /* ... Unchanged ... */ console.log("startGame function called"); currentLevel = 1; if (Tone.context.state !== 'running') { Tone.start().then(() => { console.log("AudioContext started!"); setupSounds(); proceedWithGameStart(); }).catch(e => { console.error("Tone.start() failed:", e); proceedWithGameStart(); }); } else { if (!soundsReady) setupSounds(); proceedWithGameStart(); } }
         function proceedWithGameStart() {
             console.log("Proceeding with game start...");
@@ -336,32 +438,86 @@
         const doubleTapDelay = 300; // Time window for double tap in milliseconds
 
         function handleGameAreaTap(event) {
-            event.preventDefault();
-            if (gameState !== 'playing') return;
-
-            const currentTime = Date.now();
-            const timeSinceLastTap = currentTime - lastTapTime;
-
-            // Check for double tap (laser)
-            if (timeSinceLastTap < doubleTapDelay) {
-                // Double tap detected - fire laser
-                if (!player.isFiringLaser && currentTime - player.lastLaserTime > player.laserCooldown) {
-                    fireLaser();
-                }
-                lastTapTime = 0; // Reset tap timer
-            } else {
-                // Single tap - trigger dash
-                if (!player.isDashing && currentTime - player.lastDashTime > player.dashCooldown) {
-                    player.isDashing = true;
-                    player.lastDashTime = currentTime;
-                    triggerFeedback('dash');
-                    setTimeout(() => {
-                        player.isDashing = false;
-                    }, player.dashDuration);
-                }
-                lastTapTime = currentTime;
-            }
-        }
+                            event.preventDefault();
+                            if (gameState !== 'playing') return;
+                
+                            const currentTime = Date.now();
+                            const touch = event.touches[0];
+                            const rect = canvas.getBoundingClientRect();
+                            const tapX = touch.clientX - rect.left;
+                            const tapY = touch.clientY - rect.top;
+                            const scaleX = canvas.width / rect.width;
+                            const scaleY = canvas.height / rect.height;
+                            const gameX = tapX * scaleX;
+                            const gameY = tapY * scaleY;
+                
+                            // Check if tap hits any rival with a larger hit area
+                            let rivalHit = false;
+                            for (const rival of rivals) {
+                                if (!rival.isDestroyed) {
+                                    // Add a margin around the rival for easier tapping
+                                    const hitMargin = 30;
+                                    const rivalCenterX = rival.x + rival.width/2;
+                                    const rivalCenterY = rival.y + rival.height/2;
+                                    const dx = gameX - rivalCenterX;
+                                    const dy = gameY - rivalCenterY;
+                                    const distanceSquared = dx * dx + dy * dy;
+                                    const hitRadius = rival.width/2 + hitMargin;
+                                    
+                                    if (distanceSquared <= hitRadius * hitRadius) {
+                                        rivalHit = true;
+                                        console.log("Rival tapped!");
+                                        
+                                        // Calculate direction from player to rival
+                                        const toRivalX = rivalCenterX - (player.x + player.width/2);
+                                        const toRivalY = rivalCenterY - (player.y + player.height/2);
+                                        const dist = Math.sqrt(toRivalX * toRivalX + toRivalY * toRivalY);
+                                        
+                                        // Update player's aim direction
+                                        player.lastMoveDx = toRivalX / dist;
+                                        player.lastMoveDy = toRivalY / dist;
+                                        
+                                        // Fire laser if cooldown allows
+                                        if (!player.isFiringLaser && currentTime - player.lastLaserTime > player.laserCooldown) {
+                                            fireLaser();
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                
+                            // If no rival was hit, perform dash towards tap location
+                            if (!rivalHit && !player.isDashing && currentTime - player.lastDashTime > player.dashCooldown) {
+                                // Calculate dash direction from player to tap location
+                                const playerCenterX = player.x + player.width/2;
+                                const playerCenterY = player.y + player.height/2;
+                                const dx = gameX - playerCenterX;
+                                const dy = gameY - playerCenterY;
+                                const dist = Math.sqrt(dx * dx + dy * dy);
+                                
+                                if (dist > 0) {  // Prevent division by zero
+                                    // Update movement direction for dash
+                                    player.lastMoveDx = dx / dist;
+                                    player.lastMoveDy = dy / dist;
+                                    
+                                    console.log("Dashing towards:", {x: gameX, y: gameY});
+                                    player.isDashing = true;
+                                    player.lastDashTime = currentTime;
+                                    triggerFeedback('dash');
+                                    
+                                    // Create initial dash particles
+                                    player.dashParticles.push({
+                                        x: playerCenterX,
+                                        y: playerCenterY,
+                                        life: 20
+                                    });
+                                    
+                                    setTimeout(() => {
+                                        player.isDashing = false;
+                                    }, player.dashDuration);
+                                }
+                            }
+                        }
         // Joystick Touch Handling
         joystickArea.addEventListener('touchstart', (e) => { e.preventDefault(); joystickActive = true; joystickArea.classList.add('active'); const touch = e.changedTouches[0]; joystickStartX = touch.clientX; joystickStartY = touch.clientY; }, { passive: false });
         joystickArea.addEventListener('touchmove', (e) => { e.preventDefault(); if (!joystickActive) return; if (!joystickDimensionsCalculated || maxJoystickDist <= 0) return; const touch = e.changedTouches[0]; const currentX = touch.clientX; const currentY = touch.clientY; const areaRect = joystickArea.getBoundingClientRect(); const areaCenterX = areaRect.left + areaRect.width / 2; const areaCenterY = areaRect.top + areaRect.height / 2; let dx = currentX - areaCenterX; let dy = currentY - areaCenterY; const dist = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxJoystickDist); const knobX = clampedDist * Math.cos(angle); const knobY = clampedDist * Math.sin(angle); joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`; const deadZone = maxJoystickDist * 0.15; if (clampedDist > deadZone) { const magnitude = Math.sqrt(dx * dx + dy * dy); joystickDx = dx / magnitude; joystickDy = dy / magnitude; /* joystickMagnitude removed */ } else { joystickDx = 0; joystickDy = 0; /* joystickMagnitude removed */ } }, { passive: false });
@@ -371,7 +527,30 @@
         function fireLaser() { if (player.isFiringLaser || Date.now() - player.lastLaserTime < player.laserCooldown) return; player.isFiringLaser = true; player.lastLaserTime = Date.now(); playSound('laserFire'); const laserDx = player.lastMoveDx; const laserDy = player.lastMoveDy; const laserStartX = player.x + player.width / 2 + laserDx * (player.width * 0.4); const laserStartY = player.y + player.height / 2 + laserDy * (player.height * 0.4); const laserEndX = laserStartX + laserDx * player.laserRange; const laserEndY = laserStartY + laserDy * player.laserRange; let rivalHit = false; for (const rival of rivals) { if (!rival.isDestroyed && !rivalHit) { const rivalCenterX = rival.x + rival.width / 2; const rivalCenterY = rival.y + rival.height / 2; const rivalRadius = rival.width / 2; const sx = rivalCenterX - laserStartX; const sy = rivalCenterY - laserStartY; const segDx = laserEndX - laserStartX; const segDy = laserEndY - laserStartY; const segLenSq = segDx * segDx + segDy * segDy; let t = 0; if (segLenSq > 0) { t = (sx * segDx + sy * segDy) / segLenSq; t = Math.max(0, Math.min(1, t)); } const closestX = laserStartX + t * segDx; const closestY = laserStartY + t * segDy; const distSq = Math.pow(rivalCenterX - closestX, 2) + Math.pow(rivalCenterY - closestY, 2); const hitThreshold = rivalRadius + player.laserWidth / 2; if (distSq < hitThreshold * hitThreshold) { console.log("Rival Hit!"); rival.isDestroyed = true; rivalHit = true; triggerFeedback('destroy_rival'); createDisintegrationEffect(rivalCenterX, rivalCenterY); if (rival.hazardElement && rival.hazardElement.parentNode) { rival.hazardElement.parentNode.removeChild(rival.hazardElement); } break; } } } setTimeout(() => { player.isFiringLaser = false; }, player.laserDuration); }
 
         // --- Damage Application Function --- (Unchanged)
-        function applyDamage(type) { if (player.isInvulnerable) return; player.isInvulnerable = true; player.lastHitTime = Date.now(); triggerFeedback(type); setTimeout(() => { player.isInvulnerable = false; }, player.invulnerabilityDuration); }
+        function applyDamage(type) {
+            if (player.isInvulnerable) return;
+            
+            // Set invulnerability state
+            player.isInvulnerable = true;
+            player.lastHitTime = Date.now();
+            
+            // Add visual feedback class
+            const playerElement = document.querySelector('.kovu-svg');
+            if (playerElement) {
+                playerElement.classList.add('player-invulnerable');
+                setTimeout(() => {
+                    playerElement.classList.remove('player-invulnerable');
+                }, player.invulnerabilityDuration);
+            }
+            
+            // Trigger feedback and sound
+            triggerFeedback(type);
+            
+            // Reset invulnerability after duration
+            setTimeout(() => {
+                player.isInvulnerable = false;
+            }, player.invulnerabilityDuration);
+        }
 
         // --- Game Over Trigger --- (Unchanged)
         function triggerGameOver() { if (gameState === 'gameOver') return; console.log("Game Over triggered!"); gameState = 'gameOver'; if (animationFrameId) cancelAnimationFrame(animationFrameId); playSound('gameOver'); levelTransitionOverlay.style.display = 'none'; levelTransitionOverlay.style.opacity = 0; winMessage.style.display = 'none'; winMessage.style.opacity = 0; gameOverOverlay.style.display = 'flex'; setTimeout(() => { gameOverOverlay.style.opacity = 1; }, 50); kccStatusElement.innerHTML = '🔴<span>OFFLINE</span>'; kccStatusElement.classList.remove('live'); }
@@ -490,8 +669,30 @@
                 if (player.isDashing && rival.hazardActive) { const dx = (player.x + player.width / 2) - rival.hazardTargetX; const dy = (player.y + player.height / 2) - rival.hazardTargetY; const distance = Math.sqrt(dx * dx + dy * dy); if (distance < rivalHazardRadius + player.width * 1.5 && distance > rivalHazardRadius - player.width) { if (!rival.dodgeFeedbackGiven) { triggerFeedback('dodge'); rival.dodgeFeedbackGiven = true; setTimeout(() => { rival.dodgeFeedbackGiven = false; }, 500); } } }
             });
 
-            // Check Player Damage from Direct Rival Collision (Unchanged)
-            if (!player.isInvulnerable) { rivals.forEach(rival => { if (!rival.isDestroyed) { if (player.x < rival.x + rival.width && player.x + player.width > rival.x && player.y < rival.y + rival.height && player.y + player.height > rival.y) { applyDamage('rival_collision'); } } }); }
+            // Check Player Damage from Direct Rival Collision with circular hitboxes
+            if (!player.isInvulnerable) {
+                rivals.forEach(rival => {
+                    if (!rival.isDestroyed) {
+                        // Calculate centers
+                        const playerCenterX = player.x + player.width / 2;
+                        const playerCenterY = player.y + player.height / 2;
+                        const rivalCenterX = rival.x + rival.width / 2;
+                        const rivalCenterY = rival.y + rival.height / 2;
+                        
+                        // Calculate distance between centers
+                        const dx = playerCenterX - rivalCenterX;
+                        const dy = playerCenterY - rivalCenterY;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        // More forgiving collision radius (70% of combined dimensions)
+                        const collisionRadius = (player.width + rival.width) * 0.35;
+                        
+                        if (distance < collisionRadius) {
+                            applyDamage('rival_collision');
+                        }
+                    }
+                });
+            }
 
             // Check halfway point (Unchanged)
             if (!halfwayReached && player.x > canvasWidth / 2) { halfwayReached = true; triggerFeedback('halfway'); }
