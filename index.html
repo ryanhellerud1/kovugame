@@ -151,25 +151,10 @@
             #joystick-knob { position: absolute; width: 60px; /* Slightly larger */ height: 60px; background-color: rgba(200, 200, 200, 0.6); border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; transition: background-color 0.1s ease; }
             #joystick-area.active #joystick-knob { background-color: rgba(255, 255, 255, 0.7); }
 
-            /* Action Buttons */
-            #action-buttons {
-                display: flex; /* Show action buttons */
-                gap: 10px; /* Reduced gap */
-                pointer-events: auto; /* Capture touch */
+            /* Game area tap handling */
+            #game-container {
+                touch-action: none; /* Prevent default touch behaviors */
             }
-             .touch-button { /* Action buttons */
-                 background-color: rgba(200, 200, 200, 0.5); /* Semi-transparent */
-                 border: 2px solid rgba(255, 255, 255, 0.7);
-                 pointer-events: auto; /* Capture touch */
-                 width: 60px; /* Slightly smaller */
-                 height: 60px;
-                 font-size: 0.5rem; /* Smaller text */
-                 line-height: 1.1; text-align: center; padding: 2px;
-             }
-             .touch-button:active {
-                 background-color: rgba(255, 255, 255, 0.7);
-                 transform: scale(0.95);
-             }
 
             #controls-hint { display: none; }
         }
@@ -204,10 +189,7 @@
                      <div id="joystick-base"></div>
                      <div id="joystick-knob"></div>
                  </div>
-                 <div id="action-buttons">
-                     <div id="btn-laser" class="touch-button">LASER</div>
-                     <div id="btn-dash" class="touch-button">DASH</div>
-                 </div>
+                 <!-- Action buttons removed in favor of tap gestures -->
              </div>
         </div>
         <div id="controls-hint">Controls: Arrow Keys/WASD/Joystick, Space/Touch to Dash, E/Touch to Fire Laser</div>
@@ -231,10 +213,6 @@
         // Joystick Elements
         const joystickArea = document.getElementById('joystick-area');
         const joystickKnob = document.getElementById('joystick-knob');
-        // Action Buttons References Restored
-        const btnDash = document.getElementById('btn-dash');
-        const btnLaser = document.getElementById('btn-laser');
-
         let canvasWidth, canvasHeight;
         let gameState = 'intro';
         let keys = {};
@@ -324,9 +302,37 @@
         // Keyboard Handling
         window.addEventListener('keydown', (e) => { const key = e.key.toLowerCase(); keys[key] = true; if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "e"].includes(key)) { e.preventDefault(); } if (key === 'e' && gameState === 'playing' && !player.isFiringLaser && Date.now() - player.lastLaserTime > player.laserCooldown) { fireLaser(); } });
         window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
-        // Touch Handling (Action Buttons)
-        function handleActionTouchStart(event) { event.preventDefault(); const targetId = event.target.id; if (targetId === 'btn-dash') { keys[' '] = true; } else if (targetId === 'btn-laser') { if (gameState === 'playing' && !player.isFiringLaser && Date.now() - player.lastLaserTime > player.laserCooldown) { fireLaser(); } } }
-        function handleActionTouchEnd(event) { event.preventDefault(); const targetId = event.target.id; if (targetId === 'btn-dash') { keys[' '] = false; } }
+        // Game area tap handling
+        let lastTapTime = 0;
+        const doubleTapDelay = 300; // Time window for double tap in milliseconds
+
+        function handleGameAreaTap(event) {
+            event.preventDefault();
+            if (gameState !== 'playing') return;
+
+            const currentTime = Date.now();
+            const timeSinceLastTap = currentTime - lastTapTime;
+
+            // Check for double tap (laser)
+            if (timeSinceLastTap < doubleTapDelay) {
+                // Double tap detected - fire laser
+                if (!player.isFiringLaser && currentTime - player.lastLaserTime > player.laserCooldown) {
+                    fireLaser();
+                }
+                lastTapTime = 0; // Reset tap timer
+            } else {
+                // Single tap - trigger dash
+                if (!player.isDashing && currentTime - player.lastDashTime > player.dashCooldown) {
+                    player.isDashing = true;
+                    player.lastDashTime = currentTime;
+                    triggerFeedback('dash');
+                    setTimeout(() => {
+                        player.isDashing = false;
+                    }, player.dashDuration);
+                }
+                lastTapTime = currentTime;
+            }
+        }
         // Joystick Touch Handling
         joystickArea.addEventListener('touchstart', (e) => { e.preventDefault(); joystickActive = true; joystickArea.classList.add('active'); const touch = e.changedTouches[0]; joystickStartX = touch.clientX; joystickStartY = touch.clientY; }, { passive: false });
         joystickArea.addEventListener('touchmove', (e) => { e.preventDefault(); if (!joystickActive) return; if (!joystickDimensionsCalculated || maxJoystickDist <= 0) return; const touch = e.changedTouches[0]; const currentX = touch.clientX; const currentY = touch.clientY; const areaRect = joystickArea.getBoundingClientRect(); const areaCenterX = areaRect.left + areaRect.width / 2; const areaCenterY = areaRect.top + areaRect.height / 2; let dx = currentX - areaCenterX; let dy = currentY - areaCenterY; const dist = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxJoystickDist); const knobX = clampedDist * Math.cos(angle); const knobY = clampedDist * Math.sin(angle); joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`; const deadZone = maxJoystickDist * 0.15; if (clampedDist > deadZone) { const magnitude = Math.sqrt(dx * dx + dy * dy); joystickDx = dx / magnitude; joystickDy = dy / magnitude; /* joystickMagnitude removed */ } else { joystickDx = 0; joystickDy = 0; /* joystickMagnitude removed */ } }, { passive: false });
@@ -552,12 +558,9 @@
              joystickArea.addEventListener('touchstart', (e) => { e.preventDefault(); joystickActive = true; joystickArea.classList.add('active'); const touch = e.changedTouches[0]; joystickStartX = touch.clientX; joystickStartY = touch.clientY; }, { passive: false });
              joystickArea.addEventListener('touchmove', (e) => { e.preventDefault(); if (!joystickActive) return; if (!joystickDimensionsCalculated || maxJoystickDist <= 0) return; const touch = e.changedTouches[0]; const currentX = touch.clientX; const currentY = touch.clientY; const areaRect = joystickArea.getBoundingClientRect(); const areaCenterX = areaRect.left + areaRect.width / 2; const areaCenterY = areaRect.top + areaRect.height / 2; let dx = currentX - areaCenterX; let dy = currentY - areaCenterY; const dist = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxJoystickDist); const knobX = clampedDist * Math.cos(angle); const knobY = clampedDist * Math.sin(angle); joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`; const deadZone = maxJoystickDist * 0.15; if (clampedDist > deadZone) { const magnitude = Math.sqrt(dx * dx + dy * dy); joystickDx = dx / magnitude; joystickDy = dy / magnitude; /* joystickMagnitude removed */ } else { joystickDx = 0; joystickDy = 0; /* joystickMagnitude removed */ } }, { passive: false });
              joystickArea.addEventListener('touchend', (e) => { e.preventDefault(); if (!joystickActive) return; joystickActive = false; joystickArea.classList.remove('active'); joystickKnob.style.transform = `translate(-50%, -50%)`; joystickDx = 0; joystickDy = 0; /* joystickMagnitude removed */ }, { passive: false });
-             // Add listeners for action buttons
-             btnDash.addEventListener('touchstart', handleActionTouchStart, { passive: false });
-             btnLaser.addEventListener('touchstart', handleActionTouchStart, { passive: false });
-             btnDash.addEventListener('touchend', handleActionTouchEnd, { passive: false });
-             btnLaser.addEventListener('touchend', handleActionTouchEnd, { passive: false });
-             console.log("Touch listeners added.");
+             // Add game area tap handler
+             gameContainer.addEventListener('touchstart', handleGameAreaTap, { passive: false });
+             console.log("Game area tap handler added.");
         };
 
     </script>
