@@ -11,45 +11,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         /* Base styles */
-        html, body {
-            height: 100%; /* Full height */
-            width: 100%; /* Full width */
-            margin: 0;
-            padding: 0;
-            overflow: hidden; /* Prevent scrolling */
-            touch-action: none; /* Prevent default touch behaviors */
-            font-family: 'Press Start 2P', cursive;
-            background-color: #1a1a2e;
-            color: #e0e0e0;
-            display: flex; /* Use flexbox for overall layout */
-            justify-content: center;
-            align-items: center;
-            -webkit-user-select: none; -ms-user-select: none; user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-        #game-wrapper { /* Centering wrapper for larger screens */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            height: 100%;
-            max-width: 800px; /* Max width on desktop */
-            max-height: 95vh; /* Max height on desktop to leave some space */
-        }
-        #game-container {
-            border: 4px solid #4a4a8a;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(74, 74, 138, 0.7);
-            position: relative; /* Crucial for overlaying UI and controls */
-            width: 100%;
-            flex-grow: 1; /* Takes up available vertical space */
-            min-height: 200px;
-            background: linear-gradient(135deg, #16213e, #0f3460);
-            overflow: hidden; /* Clip canvas/elements */
-        }
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; touch-action: none; font-family: 'Press Start 2P', cursive; background-color: #1a1a2e; color: #e0e0e0; display: flex; flex-direction: column; justify-content: center; align-items: center; -webkit-user-select: none; -ms-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+        #game-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 800px; height: 100%; padding: 5px; }
+        #game-container { border: 4px solid #4a4a8a; border-radius: 15px; box-shadow: 0 0 20px rgba(74, 74, 138, 0.7); position: relative; width: 100%; flex-grow: 1; min-height: 200px; background: linear-gradient(135deg, #16213e, #0f3460); overflow: hidden; }
         #gameCanvas { display: block; width: 100%; height: 100%; border-radius: 10px; }
-
-        /* Overlays (Positioned within game-container) */
+        /* Overlays */
         #intro-overlay, #level-transition-overlay, #win-message, #game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; z-index: 100; padding: 20px; border-radius: 10px; transition: opacity 0.5s ease; }
         #intro-overlay { display: flex; opacity: 1; }
         #level-transition-overlay, #win-message, #game-over-overlay { display: none; opacity: 0; }
@@ -61,38 +27,21 @@
         button { font-family: 'Press Start 2P', cursive; background: linear-gradient(45deg, #f95738, #ff8c42); color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; text-transform: uppercase; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); margin-top: 8px; }
         button:hover { transform: translateY(-2px); box-shadow: 0 6px 10px rgba(249, 87, 56, 0.5); }
         button:active { transform: translateY(1px); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); }
-        /* UI (Positioned within game-container) */
+        /* UI */
         #ui-container { position: absolute; top: 5px; left: 5px; right: 5px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; z-index: 50; font-size: 0.6rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); }
-        #ui-left, #ui-right { /* Containers for left and right aligned UI */
-            display: flex;
-            flex-direction: column; /* Stack items vertically */
-            gap: 4px; /* Space between items */
-        }
-        #ui-right {
-             align-items: flex-end; /* Align items to the right */
-        }
-
-        #kcc-status, #level-indicator, #approval-meter-container, #objective-display {
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 4px 8px;
-            border-radius: 5px;
-            pointer-events: auto; /* Allow hover/clicks if needed in future */
-        }
+        #ui-left, #ui-right { display: flex; flex-direction: column; gap: 4px; }
+        #ui-right { align-items: flex-end; }
+        #kcc-status, #level-indicator, #approval-meter-container, #objective-display { background-color: rgba(0, 0, 0, 0.5); padding: 4px 8px; border-radius: 5px; pointer-events: auto; }
         #kcc-status { border: 1px solid rgba(255, 0, 0, 0.5); }
         #kcc-status.live { background-color: rgba(0, 255, 0, 0.7); border-color: rgba(0, 255, 0, 0.5); }
         #kcc-status span { margin-left: 4px; }
-        #objective-display { text-align: right; max-width: 150px; /* Limit width */ white-space: normal; /* Allow wrapping */ }
-        #approval-meter-container {
-            /* Removed absolute positioning, now part of flex layout */
-            width: 120px;
-            font-size: 0.5rem;
-            padding: 4px;
-        }
+        #objective-display { text-align: right; max-width: 150px; white-space: normal; }
+        #approval-meter-container { width: 120px; font-size: 0.5rem; padding: 4px; }
         #approval-meter { width: 100%; height: 12px; -webkit-appearance: none; appearance: none; border: 1px solid #4a4a8a; border-radius: 3px; overflow: hidden; }
         #approval-meter::-webkit-progress-bar { background-color: #333; border-radius: 3px; }
         #approval-meter::-webkit-progress-value { background: linear-gradient(90deg, #1e90ff, #00ffff); border-radius: 0px; transition: width 0.3s ease; }
         #approval-meter::-moz-progress-bar { background: linear-gradient(90deg, #1e90ff, #00ffff); border-radius: 3px; transition: width 0.3s ease; }
-        #feedback-area { position: absolute; bottom: 5px; /* Adjusted position */ right: 5px; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; z-index: 50; max-height: 60px; /* Reduced height */ overflow: hidden; }
+        #feedback-area { position: absolute; bottom: 5px; right: 5px; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; z-index: 50; max-height: 60px; overflow: hidden; }
         .feedback-message { background-color: rgba(74, 74, 138, 0.8); color: white; padding: 3px 6px; border-radius: 4px; margin-top: 4px; font-size: 0.5rem; opacity: 1; transition: opacity 1s ease-out, transform 0.5s ease-out; transform: translateX(0); }
         .feedback-message.negative { background-color: rgba(200, 0, 0, 0.8); }
         .feedback-message.fade-out { opacity: 0; transform: translateX(20px); }
@@ -127,89 +76,30 @@
         .disintegration-particle {}
 
         /* --- Touch Controls --- */
-        /* Default (Desktop) - Controls below */
-        #touch-controls-container {
-            width: 100%;
-            max-width: 800px;
-            height: 120px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 5px 15px;
-            flex-shrink: 0;
-            box-sizing: border-box;
-            position: relative; /* Static position by default */
-            z-index: auto;
-        }
-        .touch-button { /* Action Buttons */
-            width: 65px; height: 65px; background-color: rgba(200, 200, 200, 0.4); border: 2px solid rgba(255, 255, 255, 0.6); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.6rem; color: white; text-shadow: 1px 1px 2px black; cursor: pointer; pointer-events: auto; touch-action: manipulation; -webkit-user-select: none; -ms-user-select: none; user-select: none; transition: transform 0.1s ease; line-height: 1.1; text-align: center; padding: 2px;
-        }
-        .touch-button:active { background-color: rgba(255, 255, 255, 0.6); transform: scale(0.95); }
-
-        /* Joystick Styles */
-        #joystick-area { width: 120px; height: 120px; position: relative; pointer-events: auto; border-radius: 50%; }
-        #joystick-base { position: absolute; width: 100%; height: 100%; border-radius: 50%; background-color: rgba(80, 80, 80, 0.3); border: 2px solid rgba(255, 255, 255, 0.3); top: 0; left: 0; }
-        #joystick-knob { position: absolute; width: 55px; height: 55px; background-color: rgba(200, 200, 200, 0.5); border: 2px solid rgba(255, 255, 255, 0.7); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; transition: background-color 0.1s ease; }
-        #joystick-area.active #joystick-knob { background-color: rgba(255, 255, 255, 0.6); }
-
-        #action-buttons { display: flex; gap: 15px; pointer-events: auto; }
-
-         #controls-hint { display: block; text-align: center; font-size: 0.6rem; margin-top: 5px; color: #aaa; width: 100%; max-width: 800px; }
+        /* Default (Desktop) - Controls hidden */
+        #touch-controls-container { display: none; }
 
         /* --- Mobile Overrides --- */
         @media (max-width: 768px) { /* Apply styles for screens <= 768px */
-            #game-wrapper {
-                 max-height: none; /* Allow full height */
-                 padding: 0; /* Remove padding */
-            }
-            #game-container {
-                 border: none; /* Remove border */
-                 border-radius: 0; /* Remove rounding */
-                 box-shadow: none; /* Remove shadow */
-            }
-            #gameCanvas {
-                 border-radius: 0; /* Remove rounding */
-            }
+            #game-wrapper { max-height: none; padding: 0; }
+            #game-container { border: none; border-radius: 0; box-shadow: none; }
+            #gameCanvas { border-radius: 0; }
 
             #touch-controls-container {
-                position: absolute; /* Overlay on game container */
-                bottom: 0;
-                left: 0;
-                right: 0;
-                height: auto; /* Height determined by content */
-                padding: 15px; /* Padding for spacing */
-                z-index: 60; /* Ensure controls are above canvas but below overlays */
-                pointer-events: none; /* Container doesn't block touches */
-                background: none; /* No background for container */
+                display: flex; /* Show controls on mobile */
+                position: absolute; bottom: 0; left: 0; right: 0;
+                height: auto; padding: 20px; /* Increased padding */
+                z-index: 60; pointer-events: none; background: none;
+                justify-content: space-between; align-items: flex-end;
             }
-            #joystick-area {
-                 background: none; /* Make area transparent */
-                 pointer-events: auto; /* Capture touch */
-            }
-             #joystick-base {
-                 background-color: rgba(80, 80, 80, 0.4); /* Semi-transparent base */
-                 border: 2px solid rgba(255, 255, 255, 0.4);
-             }
-             #joystick-knob {
-                 background-color: rgba(200, 200, 200, 0.6); /* Semi-transparent knob */
-                 border: 2px solid rgba(255, 255, 255, 0.8);
-             }
-             .touch-button { /* Action buttons */
-                 background-color: rgba(200, 200, 200, 0.5); /* Semi-transparent */
-                 border: 2px solid rgba(255, 255, 255, 0.7);
-                 pointer-events: auto; /* Capture touch */
-             }
-             .touch-button:active {
-                 background-color: rgba(255, 255, 255, 0.7);
-                 transform: scale(0.95);
-             }
-             #action-buttons {
-                 pointer-events: auto; /* Capture touch */
-             }
+            /* Joystick Styles */
+            #joystick-area { width: 140px; height: 140px; position: relative; pointer-events: auto; border-radius: 50%; background: none; }
+            #joystick-base { position: absolute; width: 100%; height: 100%; border-radius: 50%; background-color: rgba(80, 80, 80, 0.4); border: 2px solid rgba(255, 255, 255, 0.4); top: 0; left: 0; }
+            #joystick-knob { position: absolute; width: 65px; height: 65px; background-color: rgba(200, 200, 200, 0.6); border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; transition: background-color 0.1s ease; }
+            #joystick-area.active #joystick-knob { background-color: rgba(255, 255, 255, 0.7); }
 
-             #controls-hint {
-                 display: none; /* Hide keyboard hint */
-             }
+            #action-buttons { display: none; } /* Hide the separate action buttons div */
+            #controls-hint { display: none; }
         }
 
     </style>
@@ -242,13 +132,9 @@
                      <div id="joystick-base"></div>
                      <div id="joystick-knob"></div>
                  </div>
-                 <div id="action-buttons">
-                     <div id="btn-laser" class="touch-button">LASER</div>
-                     <div id="btn-dash" class="touch-button">DASH</div>
                  </div>
-             </div>
         </div>
-        <div id="controls-hint">Controls: Arrow Keys/WASD/Joystick, Space/Touch to Dash, E/Touch to Fire Laser</div>
+        <div id="controls-hint">Controls: Arrow Keys/WASD/Joystick, Space to Dash, E to Fire Laser</div>
     </div>
 
 
@@ -269,9 +155,7 @@
         // Joystick Elements
         const joystickArea = document.getElementById('joystick-area');
         const joystickKnob = document.getElementById('joystick-knob');
-        // Action Buttons
-        const btnDash = document.getElementById('btn-dash');
-        const btnLaser = document.getElementById('btn-laser');
+        // Action Buttons References Removed
 
         let canvasWidth, canvasHeight;
         let gameState = 'intro';
@@ -289,6 +173,20 @@
         let joystickRadius = 0;
         let knobRadius = 0;
         let maxJoystickDist = 0;
+        let joystickDx = 0;
+        let joystickDy = 0;
+        let joystickMagnitude = 0;
+        let joystickDimensionsCalculated = false; // Flag to calculate once
+
+        // Tap Control State
+        let lastTapTime = 0;
+        let lastTapX = 0;
+        let lastTapY = 0;
+        const doubleTapThreshold = 300;
+        let tapDashActive = false;
+        let tapDashTargetX = 0;
+        let tapDashTargetY = 0;
+        let tapDashDurationTimer = 0;
 
         // --- Level Configuration --- (Unchanged)
         const levelConfigs = [ { level: 1, numRivals: 3, numCollectibles: 5, targetXRatio: 0.85, targetYRatio: 0.8, objectiveText: "Objective: Reach the Viral Stage!", rivalSpeedMultiplier: 1.0, rivalHazardCooldownBase: 3500 }, { level: 2, numRivals: 4, numCollectibles: 7, targetXRatio: 0.15, targetYRatio: 0.2, objectiveText: "Objective: Reach the Upload Point!", rivalSpeedMultiplier: 1.1, rivalHazardCooldownBase: 3000 }, { level: 3, numRivals: 5, numCollectibles: 8, targetXRatio: 0.5, targetYRatio: 0.15, objectiveText: "Objective: Secure the Data Core!", rivalSpeedMultiplier: 1.15, rivalHazardCooldownBase: 2800 }, { level: 4, numRivals: 6, numCollectibles: 10, targetXRatio: 0.8, targetYRatio: 0.2, objectiveText: "Objective: Final Broadcast Point!", rivalSpeedMultiplier: 1.2, rivalHazardCooldownBase: 2500 } ];
@@ -314,8 +212,42 @@
         function createDisintegrationEffect(x, y, count = 20) { for (let i = 0; i < count; i++) { const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 2 + 1; particles.push({ x: x, y: y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, radius: Math.random() * 2.5 + 1, color: `rgba(${240 + Math.random() * 15}, ${190 + Math.random() * 30}, ${15 + Math.random() * 30}, ${0.8 + Math.random() * 0.2})`, life: 20 + Math.random() * 20, initialLife: 40 }); } }
         function spawnCollectibles(levelConf) { /* ... Unchanged ... */ collectibles.length = 0; totalCollectibles = levelConf.numCollectibles; collectiblesCollected = 0; isTargetZoneActive = false; const topMargin = 40; const bottomMargin = 50; for (let i = 0; i < totalCollectibles; i++) { let placed = false; let attempts = 0; while (!placed && attempts < 100) { attempts++; const potentialX = collectibleRadius + Math.random() * (canvasWidth - collectibleRadius * 2); const potentialY = topMargin + Math.random() * (canvasHeight - topMargin - bottomMargin); if (potentialY < topMargin || potentialY > canvasHeight - bottomMargin) continue; const distToPlayerStart = Math.sqrt(Math.pow(potentialX - canvasWidth / 4, 2) + Math.pow(potentialY - canvasHeight / 2, 2)); const distToTarget = Math.sqrt(Math.pow(potentialX - targetZone.x, 2) + Math.pow(potentialY - targetZone.y, 2)); let tooCloseToRivalStart = false; for(const r of rivals) { if (!r.isDestroyed) { const distToRival = Math.sqrt(Math.pow(potentialX - r.startX, 2) + Math.pow(potentialY - r.startY, 2)); if (distToRival < r.width * 2) { tooCloseToRivalStart = true; break; } } } if (distToPlayerStart > player.width * 2 && distToTarget > targetZone.radius * 1.5 && !tooCloseToRivalStart) { collectibles.push({ x: potentialX, y: potentialY, radius: collectibleRadius, collected: false }); placed = true; } } if (attempts >= 100) console.warn("Could not place all collectibles easily."); } console.log(`Level ${levelConf.level}: Spawned ${collectibles.length} Collectibles`); updateObjectiveText(); }
         function updateObjectiveText() { /* ... Unchanged ... */ if (isTargetZoneActive) { objectiveDisplay.textContent = levelConfigs[currentLevel - 1].objectiveText; } else { objectiveDisplay.textContent = `Collect Data! (${collectiblesCollected}/${totalCollectibles})`; } }
-        async function setupGame(levelIndex) { /* ... Unchanged ... */ const levelConf = levelConfigs[levelIndex]; if (!levelConf) { console.error("Invalid level index:", levelIndex); gameState = 'win'; winMessage.style.display = 'flex'; winMessage.style.opacity = 1; return; } console.log(`Setting up Level ${levelConf.level}`); currentLevel = levelConf.level; canvasWidth = gameContainer.clientWidth; canvasHeight = gameContainer.clientHeight; canvas.width = canvasWidth; canvas.height = canvasHeight; levelIndicator.textContent = `Level: ${levelConf.level}`; player.x = canvasWidth / 4; player.y = canvasHeight / 2; player.lastMoveDx = 1; player.lastMoveDy = 0; targetZone.x = canvasWidth * levelConf.targetXRatio; targetZone.y = canvasHeight * levelConf.targetYRatio; if (!player.img) player.img = await loadSvg(player.svg, player.width, player.height); if (!rivalImg) rivalImg = await loadSvg(rivalSvg, 38, 38); rivals.length = 0; document.querySelectorAll('.dogen-hazard').forEach(el => el.remove()); particles.length = 0; for (let i = 0; i < levelConf.numRivals; i++) { const startX = canvasWidth * (0.5 + Math.random() * 0.3); const startY = canvasHeight * (0.15 + Math.random() * 0.7); const patrolRange = 70 + Math.random() * 60; const speed = rivalBaseSpeed * levelConf.rivalSpeedMultiplier * (0.8 + Math.random() * 0.4); const hazardCooldown = levelConf.rivalHazardCooldownBase; const hazardRandomDelay = Math.random() * 1500; const hazardElement = document.createElement('div'); hazardElement.className = 'dogen-hazard'; hazardElement.style.width = `${rivalHazardRadius * 2}px`; hazardElement.style.height = `${rivalHazardRadius * 2}px`; gameContainer.appendChild(hazardElement); rivals.push({ x: startX, y: startY, width: 38, height: 38, speed: speed, direction: Math.random() < 0.5 ? 1 : -1, patrolRange: patrolRange, startX: startX, startY: startY, img: rivalImg, hazardActive: false, isInWarning: false, lastHazardTime: Date.now() - Math.random() * hazardCooldown, hazardElement: hazardElement, hazardFeedbackGiven: false, dodgeFeedbackGiven: false, isDestroyed: false, hazardCooldown: hazardCooldown, hazardTimer: hazardCooldown + hazardRandomDelay, hazardTargetX: 0, hazardTargetY: 0 }); } console.log(`Level ${levelConf.level}: Initialized ${rivals.length} Rivals`); if (!targetZone.element) { targetZone.element = document.createElement('div'); targetZone.element.className = 'target-zone'; gameContainer.appendChild(targetZone.element); } targetZone.element.style.left = `${targetZone.x - targetZone.radius}px`; targetZone.element.style.top = `${targetZone.y - targetZone.radius}px`; targetZone.element.style.width = `${targetZone.radius * 2}px`; targetZone.element.style.height = `${targetZone.radius * 2}px`; targetZone.element.classList.remove('active'); spawnCollectibles(levelConf); joystickRadius = joystickArea.offsetWidth / 2; knobRadius = joystickKnob.offsetWidth / 2; maxJoystickDist = joystickRadius - knobRadius; console.log(`Level ${levelConf.level} setup complete. Joystick Radius: ${joystickRadius}`); }
-        window.addEventListener('resize', () => { if (gameState === 'playing' || gameState === 'level_transition') { setupGame(currentLevel - 1); } });
+
+        // setupGame - Removed joystick dimension calculation here
+        async function setupGame(levelIndex) {
+            const levelConf = levelConfigs[levelIndex];
+            if (!levelConf) { console.error("Invalid level index:", levelIndex); gameState = 'win'; winMessage.style.display = 'flex'; winMessage.style.opacity = 1; return; }
+            console.log(`Setting up Level ${levelConf.level}`); currentLevel = levelConf.level;
+            canvasWidth = gameContainer.clientWidth; canvasHeight = gameContainer.clientHeight;
+            canvas.width = canvasWidth; canvas.height = canvasHeight;
+            levelIndicator.textContent = `Level: ${levelConf.level}`;
+            player.x = canvasWidth / 4; player.y = canvasHeight / 2; player.lastMoveDx = 1; player.lastMoveDy = 0;
+            targetZone.x = canvasWidth * levelConf.targetXRatio; targetZone.y = canvasHeight * levelConf.targetYRatio;
+            if (!player.img) player.img = await loadSvg(player.svg, player.width, player.height);
+            if (!rivalImg) rivalImg = await loadSvg(rivalSvg, 38, 38);
+            rivals.length = 0; document.querySelectorAll('.dogen-hazard').forEach(el => el.remove()); particles.length = 0;
+            for (let i = 0; i < levelConf.numRivals; i++) { const startX = canvasWidth * (0.5 + Math.random() * 0.3); const startY = canvasHeight * (0.15 + Math.random() * 0.7); const patrolRange = 70 + Math.random() * 60; const speed = rivalBaseSpeed * levelConf.rivalSpeedMultiplier * (0.8 + Math.random() * 0.4); const hazardCooldown = levelConf.rivalHazardCooldownBase; const hazardRandomDelay = Math.random() * 1500; const hazardElement = document.createElement('div'); hazardElement.className = 'dogen-hazard'; hazardElement.style.width = `${rivalHazardRadius * 2}px`; hazardElement.style.height = `${rivalHazardRadius * 2}px`; gameContainer.appendChild(hazardElement); rivals.push({ x: startX, y: startY, width: 38, height: 38, speed: speed, direction: Math.random() < 0.5 ? 1 : -1, patrolRange: patrolRange, startX: startX, startY: startY, img: rivalImg, hazardActive: false, isInWarning: false, lastHazardTime: Date.now() - Math.random() * hazardCooldown, hazardElement: hazardElement, hazardFeedbackGiven: false, dodgeFeedbackGiven: false, isDestroyed: false, hazardCooldown: hazardCooldown, hazardTimer: hazardCooldown + hazardRandomDelay, hazardTargetX: 0, hazardTargetY: 0 }); }
+            console.log(`Level ${levelConf.level}: Initialized ${rivals.length} Rivals`);
+            if (!targetZone.element) { targetZone.element = document.createElement('div'); targetZone.element.className = 'target-zone'; gameContainer.appendChild(targetZone.element); }
+            targetZone.element.style.left = `${targetZone.x - targetZone.radius}px`; targetZone.element.style.top = `${targetZone.y - targetZone.radius}px`; targetZone.element.style.width = `${targetZone.radius * 2}px`; targetZone.element.style.height = `${targetZone.radius * 2}px`;
+            targetZone.element.classList.remove('active');
+            spawnCollectibles(levelConf);
+            joystickDimensionsCalculated = false; // Reset flag so dimensions recalculate
+            console.log(`Level ${levelConf.level} setup complete.`);
+        }
+
+        window.addEventListener('resize', () => {
+            if (gameState === 'playing' || gameState === 'level_transition') {
+                // Recalculate canvas size and potentially joystick dimensions on resize
+                canvasWidth = gameContainer.clientWidth;
+                canvasHeight = gameContainer.clientHeight;
+                canvas.width = canvasWidth;
+                canvas.height = canvasHeight;
+                joystickDimensionsCalculated = false; // Recalculate joystick size
+                // Optional: could call setupGame again, but might reset things unnecessarily
+                // setupGame(currentLevel - 1);
+            }
+        });
         function showIntroPanel(panelNumber) { /* ... Unchanged ... */ console.log("Showing intro panel:", panelNumber); document.querySelectorAll('.intro-panel').forEach(p => p.classList.remove('active')); const nextPanel = document.getElementById(`intro-${panelNumber}`); if (nextPanel) { nextPanel.classList.add('active'); } else { console.error("Could not find intro panel:", panelNumber); } }
         function startGame() { /* ... Unchanged ... */ console.log("startGame function called"); currentLevel = 1; if (Tone.context.state !== 'running') { Tone.start().then(() => { console.log("AudioContext started!"); setupSounds(); proceedWithGameStart(); }).catch(e => { console.error("Tone.start() failed:", e); proceedWithGameStart(); }); } else { if (!soundsReady) setupSounds(); proceedWithGameStart(); } }
         function proceedWithGameStart() { /* ... Unchanged ... */ console.log("Proceeding with game start..."); introOverlay.style.display = 'none'; introOverlay.style.opacity = 0; winMessage.style.display = 'none'; winMessage.style.opacity = 0; levelTransitionOverlay.style.display = 'none'; levelTransitionOverlay.style.opacity = 0; gameOverOverlay.style.display = 'none'; gameOverOverlay.style.opacity = 0; resetGameState(currentLevel - 1); setupGame(currentLevel - 1).then(() => { gameState = 'playing'; kccStatusElement.innerHTML = '🟢<span>LIVE</span>'; kccStatusElement.classList.add('live'); if (animationFrameId) cancelAnimationFrame(animationFrameId); gameLoop(); console.log("Game Started - Level", currentLevel); }).catch(err => { console.error("Error during setupGame in proceedWithGameStart:", err); }); }
@@ -336,6 +268,15 @@
             e.preventDefault();
             if (!joystickActive) return;
 
+            // Ensure dimensions are calculated
+            if (!joystickDimensionsCalculated || maxJoystickDist <= 0) {
+                 joystickRadius = joystickArea.offsetWidth / 2;
+                 knobRadius = joystickKnob.offsetWidth / 2;
+                 maxJoystickDist = joystickRadius > knobRadius ? joystickRadius - knobRadius : 30; // Fallback value
+                 if (maxJoystickDist > 0) joystickDimensionsCalculated = true;
+                 else return; // Don't process if dimensions are still invalid
+            }
+
             const touch = e.changedTouches[0];
             const currentX = touch.clientX;
             const currentY = touch.clientY;
@@ -351,16 +292,14 @@
             const knobY = clampedDist * Math.sin(angle);
             joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
 
-            // --- Analog Movement Logic ---
-            const deadZone = maxJoystickDist * 0.1; // Small dead zone
+            // Analog Movement Logic
+            const deadZone = maxJoystickDist * 0.1;
             if (clampedDist > deadZone) {
-                // Normalize the direction vector based on the raw dx/dy from center
-                const magnitude = Math.sqrt(dx * dx + dy * dy); // Use original distance for direction
+                const magnitude = Math.sqrt(dx * dx + dy * dy);
                 joystickDx = dx / magnitude;
                 joystickDy = dy / magnitude;
-                // Calculate magnitude relative to max distance (0 to 1)
-                joystickMagnitude = Math.pow(clampedDist / maxJoystickDist, 1.5); // Sensitivity curve
-                joystickMagnitude = Math.min(1, joystickMagnitude); // Clamp
+                joystickMagnitude = Math.pow(clampedDist / maxJoystickDist, 1.5);
+                joystickMagnitude = Math.min(1, joystickMagnitude);
             } else {
                 joystickDx = 0;
                 joystickDy = 0;
@@ -373,10 +312,7 @@
             joystickActive = false;
             joystickArea.classList.remove('active');
             joystickKnob.style.transform = `translate(-50%, -50%)`;
-            // Reset joystick movement state
-            joystickDx = 0;
-            joystickDy = 0;
-            joystickMagnitude = 0;
+            joystickDx = 0; joystickDy = 0; joystickMagnitude = 0;
         }, { passive: false });
 
 
@@ -511,16 +447,36 @@
         // --- Community Feedback --- (Unchanged)
         function triggerFeedback(eventType) { const messageData = feedbackMessages.find(m => m.trigger === eventType); if (!messageData) return; const currentApproval = parseInt(approvalMeter.value); const newApproval = Math.max(0, currentApproval + messageData.approval); approvalMeter.value = newApproval; const msgElement = document.createElement('div'); msgElement.className = 'feedback-message'; if (messageData.negative) { msgElement.classList.add('negative'); } msgElement.textContent = messageData.text; feedbackArea.appendChild(msgElement); while (feedbackArea.children.length > 5) { feedbackArea.removeChild(feedbackArea.firstChild); } setTimeout(() => { msgElement.classList.add('fade-out'); msgElement.addEventListener('transitionend', () => { if (msgElement.parentElement === feedbackArea) { feedbackArea.removeChild(msgElement); } }, { once: true }); }, 2000); if (messageData.sound) { playSound(messageData.sound, messageData.note || null, '8n'); } if (newApproval <= 0 && gameState !== 'gameOver') { triggerGameOver(); } }
 
-        // --- Game Loop --- (Unchanged)
-        function gameLoop() { if (gameState === 'playing') { update(); draw(); animationFrameId = requestAnimationFrame(gameLoop); } else { console.log("Game loop paused - state:", gameState); } }
+        // --- Game Loop ---
+        function gameLoop() {
+            // Calculate joystick dimensions once after game starts
+            if (gameState === 'playing' && !joystickDimensionsCalculated && joystickArea.offsetWidth > 0) {
+                joystickRadius = joystickArea.offsetWidth / 2;
+                knobRadius = joystickKnob.offsetWidth / 2;
+                maxJoystickDist = joystickRadius - knobRadius;
+                if (maxJoystickDist > 0) {
+                    joystickDimensionsCalculated = true;
+                    console.log("Joystick dimensions calculated:", joystickRadius, maxJoystickDist);
+                }
+            }
+
+            if (gameState === 'playing') {
+                update();
+                draw();
+                animationFrameId = requestAnimationFrame(gameLoop);
+            } else {
+                console.log("Game loop paused - state:", gameState);
+            }
+        }
 
         // --- Initial Setup Call ---
         window.onload = () => {
              console.log("Window loaded.");
-             setupGame(currentLevel - 1);
+             // Initial setup for level 1
+             setupGame(currentLevel - 1); // setupGame now handles joystick calc flag reset
              // Add touch listeners after DOM is loaded
              joystickArea.addEventListener('touchstart', (e) => { e.preventDefault(); joystickActive = true; joystickArea.classList.add('active'); const touch = e.changedTouches[0]; joystickStartX = touch.clientX; joystickStartY = touch.clientY; }, { passive: false });
-             joystickArea.addEventListener('touchmove', (e) => { e.preventDefault(); if (!joystickActive) return; const touch = e.changedTouches[0]; const currentX = touch.clientX; const currentY = touch.clientY; const areaRect = joystickArea.getBoundingClientRect(); const areaCenterX = areaRect.left + areaRect.width / 2; const areaCenterY = areaRect.top + areaRect.height / 2; let dx = currentX - areaCenterX; let dy = currentY - areaCenterY; const dist = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxJoystickDist); const knobX = clampedDist * Math.cos(angle); const knobY = clampedDist * Math.sin(angle); joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`; const deadZone = maxJoystickDist * 0.1; if (clampedDist > deadZone) { const magnitude = Math.sqrt(dx * dx + dy * dy); joystickDx = dx / magnitude; joystickDy = dy / magnitude; joystickMagnitude = Math.pow(clampedDist / maxJoystickDist, 1.5); joystickMagnitude = Math.min(1, joystickMagnitude); } else { joystickDx = 0; joystickDy = 0; joystickMagnitude = 0; } }, { passive: false });
+             joystickArea.addEventListener('touchmove', (e) => { e.preventDefault(); if (!joystickActive) return; if (!joystickDimensionsCalculated || maxJoystickDist <= 0) return; const touch = e.changedTouches[0]; const currentX = touch.clientX; const currentY = touch.clientY; const areaRect = joystickArea.getBoundingClientRect(); const areaCenterX = areaRect.left + areaRect.width / 2; const areaCenterY = areaRect.top + areaRect.height / 2; let dx = currentX - areaCenterX; let dy = currentY - areaCenterY; const dist = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxJoystickDist); const knobX = clampedDist * Math.cos(angle); const knobY = clampedDist * Math.sin(angle); joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`; const deadZone = maxJoystickDist * 0.1; if (clampedDist > deadZone) { const magnitude = Math.sqrt(dx * dx + dy * dy); joystickDx = dx / magnitude; joystickDy = dy / magnitude; joystickMagnitude = Math.pow(clampedDist / maxJoystickDist, 1.5); joystickMagnitude = Math.min(1, joystickMagnitude); } else { joystickDx = 0; joystickDy = 0; joystickMagnitude = 0; } }, { passive: false });
              joystickArea.addEventListener('touchend', (e) => { e.preventDefault(); if (!joystickActive) return; joystickActive = false; joystickArea.classList.remove('active'); joystickKnob.style.transform = `translate(-50%, -50%)`; joystickDx = 0; joystickDy = 0; joystickMagnitude = 0; }, { passive: false });
              // Add tap listener to canvas
              canvas.addEventListener('touchstart', (e) => { if (gameState !== 'playing') return; e.preventDefault(); const touch = e.changedTouches[0]; const rect = canvas.getBoundingClientRect(); const tapX = touch.clientX - rect.left; const tapY = touch.clientY - rect.top; const now = Date.now(); const joystickRect = joystickArea.getBoundingClientRect(); if (touch.clientX >= joystickRect.left && touch.clientX <= joystickRect.right && touch.clientY >= joystickRect.top && touch.clientY <= joystickRect.bottom) { return; } if (now - lastTapTime < doubleTapThreshold) { console.log("Double Tap -> Dash"); if (!player.isDashing && now - player.lastDashTime > player.dashCooldown) { player.isDashing = true; player.lastDashTime = now; tapDashActive = true; tapDashTargetX = tapX; tapDashTargetY = tapY; tapDashDurationTimer = player.dashDuration; triggerFeedback('dash'); } lastTapTime = 0; } else { console.log("Single Tap -> Laser"); if (!player.isFiringLaser && now - player.lastLaserTime > player.laserCooldown) { fireLaser(tapX, tapY); } lastTapTime = now; lastTapX = tapX; lastTapY = tapY; } }, { passive: false });
