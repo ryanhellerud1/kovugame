@@ -11,45 +11,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         /* Base styles */
-        html, body {
-            height: 100%; /* Full height */
-            width: 100%; /* Full width */
-            margin: 0;
-            padding: 0;
-            overflow: hidden; /* Prevent scrolling */
-            touch-action: none; /* Prevent default touch behaviors */
-            font-family: 'Press Start 2P', cursive;
-            background-color: #1a1a2e;
-            color: #e0e0e0;
-            display: flex; /* Use flexbox for overall layout */
-            justify-content: center;
-            align-items: center;
-            -webkit-user-select: none; -ms-user-select: none; user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-        #game-wrapper { /* Centering wrapper for larger screens */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            height: 100%;
-            max-width: 800px; /* Max width on desktop */
-            max-height: 95vh; /* Max height on desktop to leave some space */
-        }
-        #game-container {
-            border: 4px solid #4a4a8a;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(74, 74, 138, 0.7);
-            position: relative; /* Crucial for overlaying UI and controls */
-            width: 100%;
-            flex-grow: 1; /* Takes up available vertical space */
-            min-height: 200px;
-            background: linear-gradient(135deg, #16213e, #0f3460);
-            overflow: hidden; /* Clip canvas/elements */
-        }
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; touch-action: none; font-family: 'Press Start 2P', cursive; background-color: #1a1a2e; color: #e0e0e0; display: flex; flex-direction: column; justify-content: center; align-items: center; -webkit-user-select: none; -ms-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+        #game-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 800px; height: 100%; padding: 5px; }
+        #game-container { border: 4px solid #4a4a8a; border-radius: 15px; box-shadow: 0 0 20px rgba(74, 74, 138, 0.7); position: relative; width: 100%; flex-grow: 1; min-height: 200px; background: linear-gradient(135deg, #16213e, #0f3460); overflow: hidden; }
         #gameCanvas { display: block; width: 100%; height: 100%; border-radius: 10px; }
-
-        /* Overlays (Positioned within game-container) */
+        /* Overlays */
         #intro-overlay, #level-transition-overlay, #win-message, #game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; z-index: 100; padding: 20px; border-radius: 10px; transition: opacity 0.5s ease; }
         #intro-overlay { display: flex; opacity: 1; }
         #level-transition-overlay, #win-message, #game-over-overlay { display: none; opacity: 0; }
@@ -61,19 +27,51 @@
         button { font-family: 'Press Start 2P', cursive; background: linear-gradient(45deg, #f95738, #ff8c42); color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; text-transform: uppercase; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); margin-top: 8px; }
         button:hover { transform: translateY(-2px); box-shadow: 0 6px 10px rgba(249, 87, 56, 0.5); }
         button:active { transform: translateY(1px); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); }
-        /* UI (Positioned within game-container) */
-        #ui-container { position: absolute; top: 5px; left: 5px; right: 5px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; z-index: 50; font-size: 0.6rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); }
-        #kcc-status, #level-indicator { background-color: rgba(0, 0, 0, 0.5); padding: 4px 8px; border-radius: 5px; }
+
+        /* --- UI Positioning --- */
+        #ui-container {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            display: flex;
+            justify-content: space-between; /* Space between left and right groups */
+            align-items: flex-start;
+            pointer-events: none;
+            z-index: 50;
+            font-size: 0.6rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        }
+        #ui-left, #ui-right { /* Containers for left and right aligned UI */
+            display: flex;
+            flex-direction: column; /* Stack items vertically */
+            gap: 4px; /* Space between items */
+        }
+        #ui-right {
+             align-items: flex-end; /* Align items to the right */
+        }
+
+        #kcc-status, #level-indicator, #approval-meter-container, #objective-display {
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 4px 8px;
+            border-radius: 5px;
+            pointer-events: auto; /* Allow hover/clicks if needed in future */
+        }
         #kcc-status { border: 1px solid rgba(255, 0, 0, 0.5); }
         #kcc-status.live { background-color: rgba(0, 255, 0, 0.7); border-color: rgba(0, 255, 0, 0.5); }
         #kcc-status span { margin-left: 4px; }
-        #objective-display { background-color: rgba(0, 0, 0, 0.5); padding: 4px 8px; border-radius: 5px; text-align: right; max-width: 60%; }
-        #approval-meter-container { position: absolute; bottom: 5px; left: 5px; width: 120px; font-size: 0.5rem; background-color: rgba(0, 0, 0, 0.5); padding: 4px; border-radius: 5px; pointer-events: none; z-index: 50; }
+        #objective-display { text-align: right; max-width: 150px; /* Limit width */ white-space: normal; /* Allow wrapping */ }
+        #approval-meter-container {
+            /* Removed absolute positioning, now part of flex layout */
+            width: 120px;
+            font-size: 0.5rem;
+            padding: 4px;
+        }
         #approval-meter { width: 100%; height: 12px; -webkit-appearance: none; appearance: none; border: 1px solid #4a4a8a; border-radius: 3px; overflow: hidden; }
         #approval-meter::-webkit-progress-bar { background-color: #333; border-radius: 3px; }
         #approval-meter::-webkit-progress-value { background: linear-gradient(90deg, #1e90ff, #00ffff); border-radius: 0px; transition: width 0.3s ease; }
         #approval-meter::-moz-progress-bar { background: linear-gradient(90deg, #1e90ff, #00ffff); border-radius: 3px; transition: width 0.3s ease; }
-        #feedback-area { position: absolute; bottom: 25px; right: 5px; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; z-index: 50; max-height: 80px; overflow: hidden; }
+        #feedback-area { position: absolute; bottom: 5px; /* Adjusted position */ right: 5px; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; z-index: 50; max-height: 60px; /* Reduced height */ overflow: hidden; }
         .feedback-message { background-color: rgba(74, 74, 138, 0.8); color: white; padding: 3px 6px; border-radius: 4px; margin-top: 4px; font-size: 0.5rem; opacity: 1; transition: opacity 1s ease-out, transform 0.5s ease-out; transform: translateX(0); }
         .feedback-message.negative { background-color: rgba(200, 0, 0, 0.8); }
         .feedback-message.fade-out { opacity: 0; transform: translateX(20px); }
@@ -108,89 +106,33 @@
         .disintegration-particle {}
 
         /* --- Touch Controls --- */
-        /* Default (Desktop) - Controls below */
-        #touch-controls-container {
-            width: 100%;
-            max-width: 800px;
-            height: 120px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 5px 15px;
-            flex-shrink: 0;
-            box-sizing: border-box;
-            position: relative; /* Static position by default */
-            z-index: auto;
-        }
-        .touch-button { /* Action Buttons */
-            width: 65px; height: 65px; background-color: rgba(200, 200, 200, 0.4); border: 2px solid rgba(255, 255, 255, 0.6); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.6rem; color: white; text-shadow: 1px 1px 2px black; cursor: pointer; pointer-events: auto; touch-action: manipulation; -webkit-user-select: none; -ms-user-select: none; user-select: none; transition: transform 0.1s ease; line-height: 1.1; text-align: center; padding: 2px;
-        }
-        .touch-button:active { background-color: rgba(255, 255, 255, 0.6); transform: scale(0.95); }
-
-        /* Joystick Styles */
-        #joystick-area { width: 120px; height: 120px; position: relative; pointer-events: auto; border-radius: 50%; }
-        #joystick-base { position: absolute; width: 100%; height: 100%; border-radius: 50%; background-color: rgba(80, 80, 80, 0.3); border: 2px solid rgba(255, 255, 255, 0.3); top: 0; left: 0; }
-        #joystick-knob { position: absolute; width: 55px; height: 55px; background-color: rgba(200, 200, 200, 0.5); border: 2px solid rgba(255, 255, 255, 0.7); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; transition: background-color 0.1s ease; }
-        #joystick-area.active #joystick-knob { background-color: rgba(255, 255, 255, 0.6); }
-
-        #action-buttons { display: flex; gap: 15px; pointer-events: auto; }
-
-         #controls-hint { display: block; text-align: center; font-size: 0.6rem; margin-top: 5px; color: #aaa; width: 100%; max-width: 800px; }
+        /* Default (Desktop) - Controls hidden */
+        #touch-controls-container { display: none; }
 
         /* --- Mobile Overrides --- */
         @media (max-width: 768px) { /* Apply styles for screens <= 768px */
-            #game-wrapper {
-                 max-height: none; /* Allow full height */
-                 padding: 0; /* Remove padding */
-            }
-            #game-container {
-                 border: none; /* Remove border */
-                 border-radius: 0; /* Remove rounding */
-                 box-shadow: none; /* Remove shadow */
-            }
-            #gameCanvas {
-                 border-radius: 0; /* Remove rounding */
-            }
+            #game-wrapper { max-height: none; padding: 0; }
+            #game-container { border: none; border-radius: 0; box-shadow: none; }
+            #gameCanvas { border-radius: 0; }
 
             #touch-controls-container {
+                display: flex; /* Show controls on mobile */
                 position: absolute; /* Overlay on game container */
-                bottom: 0;
-                left: 0;
-                right: 0;
-                height: auto; /* Height determined by content */
-                padding: 15px; /* Padding for spacing */
-                z-index: 60; /* Ensure controls are above canvas but below overlays */
-                pointer-events: none; /* Container doesn't block touches */
-                background: none; /* No background for container */
+                bottom: 0; left: 0; right: 0;
+                height: auto; padding: 15px;
+                z-index: 60; pointer-events: none; background: none;
+                justify-content: space-between; /* Space out joystick and potential future action buttons */
+                align-items: flex-end; /* Align to bottom */
             }
-            #joystick-area {
-                 background: none; /* Make area transparent */
-                 pointer-events: auto; /* Capture touch */
-            }
-             #joystick-base {
-                 background-color: rgba(80, 80, 80, 0.4); /* Semi-transparent base */
-                 border: 2px solid rgba(255, 255, 255, 0.4);
-             }
-             #joystick-knob {
-                 background-color: rgba(200, 200, 200, 0.6); /* Semi-transparent knob */
-                 border: 2px solid rgba(255, 255, 255, 0.8);
-             }
-             .touch-button { /* Action buttons */
-                 background-color: rgba(200, 200, 200, 0.5); /* Semi-transparent */
-                 border: 2px solid rgba(255, 255, 255, 0.7);
-                 pointer-events: auto; /* Capture touch */
-             }
-             .touch-button:active {
-                 background-color: rgba(255, 255, 255, 0.7);
-                 transform: scale(0.95);
-             }
-             #action-buttons {
-                 pointer-events: auto; /* Capture touch */
-             }
+            /* Joystick Styles */
+            #joystick-area { width: 120px; height: 120px; position: relative; pointer-events: auto; border-radius: 50%; background: none; }
+            #joystick-base { position: absolute; width: 100%; height: 100%; border-radius: 50%; background-color: rgba(80, 80, 80, 0.4); border: 2px solid rgba(255, 255, 255, 0.4); top: 0; left: 0; }
+            #joystick-knob { position: absolute; width: 55px; height: 55px; background-color: rgba(200, 200, 200, 0.6); border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; transition: background-color 0.1s ease; }
+            #joystick-area.active #joystick-knob { background-color: rgba(255, 255, 255, 0.7); }
 
-             #controls-hint {
-                 display: none; /* Hide keyboard hint */
-             }
+            #action-buttons { display: none; } /* Hide the separate action buttons div */
+
+            #controls-hint { display: none; }
         }
 
     </style>
@@ -207,8 +149,14 @@
             <div id="level-transition-overlay"><h2>Level Complete!</h2><p>Prepare for the next challenge...</p></div>
             <div id="game-over-overlay"><h2>Game Over!</h2><p>Community approval dropped too low. Try again?</p><button onclick="startGame()">Restart</button></div>
             <canvas id="gameCanvas"></canvas>
-            <div id="ui-container"><div><div id="kcc-status">🔴<span>OFFLINE</span></div><div id="level-indicator" class="mt-2">Level: 1</div></div><div id="objective-display">Objective: Collect Data! (0/0)</div></div>
-            <div id="approval-meter-container"> Community Approval: <progress id="approval-meter" value="10" max="100"></progress> </div>
+            <div id="ui-container">
+                 <div id="ui-left"> <div id="kcc-status">🔴<span>OFFLINE</span></div>
+                      <div id="level-indicator">Level: 1</div>
+                 </div>
+                 <div id="ui-right"> <div id="approval-meter-container"> Community Approval: <progress id="approval-meter" value="10" max="100"></progress> </div>
+                      <div id="objective-display">Objective: Collect Data! (0/0)</div>
+                 </div>
+            </div>
             <div id="feedback-area"></div>
             <div id="win-message"> <h2>All Levels Complete!</h2> <p>#KovuWins! The Community is ecstatic!</p> <button onclick="restartGame()">Play Again?</button> </div>
 
@@ -217,13 +165,9 @@
                      <div id="joystick-base"></div>
                      <div id="joystick-knob"></div>
                  </div>
-                 <div id="action-buttons">
-                     <div id="btn-laser" class="touch-button">LASER</div>
-                     <div id="btn-dash" class="touch-button">DASH</div>
                  </div>
-             </div>
         </div>
-        <div id="controls-hint">Controls: Arrow Keys/WASD/Joystick, Space/Touch to Dash, E/Touch to Fire Laser</div>
+        <div id="controls-hint">Controls: Arrow Keys/WASD/Joystick, Space to Dash, E to Fire Laser</div>
     </div>
 
 
@@ -244,9 +188,9 @@
         // Joystick Elements
         const joystickArea = document.getElementById('joystick-area');
         const joystickKnob = document.getElementById('joystick-knob');
-        // Action Buttons
-        const btnDash = document.getElementById('btn-dash');
-        const btnLaser = document.getElementById('btn-laser');
+        // Action Buttons References Removed
+        // const btnDash = document.getElementById('btn-dash');
+        // const btnLaser = document.getElementById('btn-laser');
 
         let canvasWidth, canvasHeight;
         let gameState = 'intro';
@@ -264,6 +208,17 @@
         let joystickRadius = 0;
         let knobRadius = 0;
         let maxJoystickDist = 0;
+
+        // Tap Control State
+        let lastTapTime = 0;
+        let lastTapX = 0;
+        let lastTapY = 0;
+        const doubleTapThreshold = 300; // milliseconds for double tap
+        let tapDashActive = false; // Flag to indicate a tap-initiated dash
+        let tapDashTargetX = 0;
+        let tapDashTargetY = 0;
+        let tapDashDurationTimer = 0;
+
 
         // --- Level Configuration --- (Unchanged)
         const levelConfigs = [ { level: 1, numRivals: 3, numCollectibles: 5, targetXRatio: 0.85, targetYRatio: 0.8, objectiveText: "Objective: Reach the Viral Stage!", rivalSpeedMultiplier: 1.0, rivalHazardCooldownBase: 3500 }, { level: 2, numRivals: 4, numCollectibles: 7, targetXRatio: 0.15, targetYRatio: 0.2, objectiveText: "Objective: Reach the Upload Point!", rivalSpeedMultiplier: 1.1, rivalHazardCooldownBase: 3000 }, { level: 3, numRivals: 5, numCollectibles: 8, targetXRatio: 0.5, targetYRatio: 0.15, objectiveText: "Objective: Secure the Data Core!", rivalSpeedMultiplier: 1.15, rivalHazardCooldownBase: 2800 }, { level: 4, numRivals: 6, numCollectibles: 10, targetXRatio: 0.8, targetYRatio: 0.2, objectiveText: "Objective: Final Broadcast Point!", rivalSpeedMultiplier: 1.2, rivalHazardCooldownBase: 2500 } ];
@@ -295,22 +250,107 @@
         function startGame() { /* ... Unchanged ... */ console.log("startGame function called"); currentLevel = 1; if (Tone.context.state !== 'running') { Tone.start().then(() => { console.log("AudioContext started!"); setupSounds(); proceedWithGameStart(); }).catch(e => { console.error("Tone.start() failed:", e); proceedWithGameStart(); }); } else { if (!soundsReady) setupSounds(); proceedWithGameStart(); } }
         function proceedWithGameStart() { /* ... Unchanged ... */ console.log("Proceeding with game start..."); introOverlay.style.display = 'none'; introOverlay.style.opacity = 0; winMessage.style.display = 'none'; winMessage.style.opacity = 0; levelTransitionOverlay.style.display = 'none'; levelTransitionOverlay.style.opacity = 0; gameOverOverlay.style.display = 'none'; gameOverOverlay.style.opacity = 0; resetGameState(currentLevel - 1); setupGame(currentLevel - 1).then(() => { gameState = 'playing'; kccStatusElement.innerHTML = '🟢<span>LIVE</span>'; kccStatusElement.classList.add('live'); if (animationFrameId) cancelAnimationFrame(animationFrameId); gameLoop(); console.log("Game Started - Level", currentLevel); }).catch(err => { console.error("Error during setupGame in proceedWithGameStart:", err); }); }
         function restartGame() { /* ... Unchanged ... */ winMessage.style.display = 'none'; winMessage.style.opacity = 0; gameOverOverlay.style.display = 'none'; gameOverOverlay.style.opacity = 0; startGame(); }
-        function resetGameState(levelIndex) { /* ... Unchanged ... */ const levelConf = levelConfigs[levelIndex]; if (!levelConf) return; player.isDashing = false; player.lastDashTime = 0; player.dashParticles = []; player.isFiringLaser = false; player.lastLaserTime = 0; player.isInvulnerable = false; player.lastHitTime = 0; rivals.forEach(rival => { rival.isDestroyed = false; rival.hazardActive = false; rival.isInWarning = false; rival.hazardFeedbackGiven = false; rival.dodgeFeedbackGiven = false; if (rival.hazardElement) { rival.hazardElement.classList.remove('active', 'warning'); rival.hazardElement.style.opacity = 0; if (!rival.hazardElement.parentNode) { gameContainer.appendChild(rival.hazardElement); } } }); approvalMeter.value = 10; feedbackArea.innerHTML = ''; halfwayReached = false; particles.length = 0; collectiblesCollected = 0; isTargetZoneActive = false; if(targetZone.element) targetZone.element.classList.remove('active'); }
+        function resetGameState(levelIndex) { /* ... Unchanged ... */ const levelConf = levelConfigs[levelIndex]; if (!levelConf) return; player.isDashing = false; player.lastDashTime = 0; player.dashParticles = []; player.isFiringLaser = false; player.lastLaserTime = 0; player.isInvulnerable = false; player.lastHitTime = 0; tapDashActive = false; rivals.forEach(rival => { rival.isDestroyed = false; rival.hazardActive = false; rival.isInWarning = false; rival.hazardFeedbackGiven = false; rival.dodgeFeedbackGiven = false; if (rival.hazardElement) { rival.hazardElement.classList.remove('active', 'warning'); rival.hazardElement.style.opacity = 0; if (!rival.hazardElement.parentNode) { gameContainer.appendChild(rival.hazardElement); } } }); approvalMeter.value = 10; feedbackArea.innerHTML = ''; halfwayReached = false; particles.length = 0; collectiblesCollected = 0; isTargetZoneActive = false; if(targetZone.element) targetZone.element.classList.remove('active'); }
 
-        // --- Input Handling --- (Unchanged)
-        // Keyboard Handling
+        // --- Input Handling ---
+        // Keyboard Handling (Unchanged)
         window.addEventListener('keydown', (e) => { const key = e.key.toLowerCase(); keys[key] = true; if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "e"].includes(key)) { e.preventDefault(); } if (key === 'e' && gameState === 'playing' && !player.isFiringLaser && Date.now() - player.lastLaserTime > player.laserCooldown) { fireLaser(); } });
         window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
-        // Touch Handling (Action Buttons)
-        function handleActionTouchStart(event) { event.preventDefault(); const targetId = event.target.id; if (targetId === 'btn-dash') { keys[' '] = true; } else if (targetId === 'btn-laser') { if (gameState === 'playing' && !player.isFiringLaser && Date.now() - player.lastLaserTime > player.laserCooldown) { fireLaser(); } } }
-        function handleActionTouchEnd(event) { event.preventDefault(); const targetId = event.target.id; if (targetId === 'btn-dash') { keys[' '] = false; } }
-        // Joystick Touch Handling
+
+        // --- Touch Handling (Canvas for Tap Actions) ---
+        canvas.addEventListener('touchstart', (e) => {
+            if (gameState !== 'playing') return;
+            e.preventDefault(); // Prevent default canvas touch behavior
+
+            const touch = e.changedTouches[0];
+            const rect = canvas.getBoundingClientRect();
+            const tapX = touch.clientX - rect.left;
+            const tapY = touch.clientY - rect.top;
+            const now = Date.now();
+
+            // Check if tap is within joystick area - if so, ignore for dash/laser
+            const joystickRect = joystickArea.getBoundingClientRect();
+            if (touch.clientX >= joystickRect.left && touch.clientX <= joystickRect.right &&
+                touch.clientY >= joystickRect.top && touch.clientY <= joystickRect.bottom) {
+                return; // Let joystick handler manage this touch
+            }
+
+            // Double Tap Check
+            if (now - lastTapTime < doubleTapThreshold) {
+                 // Double tap detected - Initiate Dash towards tap
+                 console.log("Double Tap -> Dash");
+                 if (!player.isDashing && now - player.lastDashTime > player.dashCooldown) {
+                     player.isDashing = true;
+                     player.lastDashTime = now;
+                     tapDashActive = true; // Mark as tap-initiated dash
+                     tapDashTargetX = tapX;
+                     tapDashTargetY = tapY;
+                     tapDashDurationTimer = player.dashDuration; // Start dash timer
+                     triggerFeedback('dash');
+                 }
+                 lastTapTime = 0; // Reset last tap time to prevent triple taps etc.
+            } else {
+                 // Single Tap - Initiate Laser towards tap
+                 console.log("Single Tap -> Laser");
+                 if (!player.isFiringLaser && now - player.lastLaserTime > player.laserCooldown) {
+                     fireLaser(tapX, tapY); // Pass tap coordinates
+                 }
+                 lastTapTime = now; // Record time for double tap check
+                 lastTapX = tapX;
+                 lastTapY = tapY;
+            }
+
+        }, { passive: false });
+
+
+        // --- Touch Handling (Joystick) --- (Unchanged)
         joystickArea.addEventListener('touchstart', (e) => { e.preventDefault(); joystickActive = true; joystickArea.classList.add('active'); const touch = e.changedTouches[0]; joystickStartX = touch.clientX; joystickStartY = touch.clientY; }, { passive: false });
         joystickArea.addEventListener('touchmove', (e) => { e.preventDefault(); if (!joystickActive) return; const touch = e.changedTouches[0]; const currentX = touch.clientX; const currentY = touch.clientY; const areaRect = joystickArea.getBoundingClientRect(); const areaCenterX = areaRect.left + areaRect.width / 2; const areaCenterY = areaRect.top + areaRect.height / 2; let dx = currentX - areaCenterX; let dy = currentY - areaCenterY; const dist = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxJoystickDist); const knobX = clampedDist * Math.cos(angle); const knobY = clampedDist * Math.sin(angle); joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`; const deadZone = maxJoystickDist * 0.15; const activationThreshold = deadZone * 0.8; keys['arrowup'] = false; keys['arrowdown'] = false; keys['arrowleft'] = false; keys['arrowright'] = false; if (clampedDist > deadZone) { if (dy < -activationThreshold) { keys['arrowup'] = true; } else if (dy > activationThreshold) { keys['arrowdown'] = true; } if (dx < -activationThreshold) { keys['arrowleft'] = true; } else if (dx > activationThreshold) { keys['arrowright'] = true; } } }, { passive: false });
         joystickArea.addEventListener('touchend', (e) => { e.preventDefault(); if (!joystickActive) return; joystickActive = false; joystickArea.classList.remove('active'); joystickKnob.style.transform = `translate(-50%, -50%)`; keys['arrowup'] = false; keys['arrowdown'] = false; keys['arrowleft'] = false; keys['arrowright'] = false; }, { passive: false });
 
-        // --- Laser Firing Logic --- (Unchanged)
-        function fireLaser() { player.isFiringLaser = true; player.lastLaserTime = Date.now(); playSound('laserFire'); const laserDx = player.lastMoveDx; const laserDy = player.lastMoveDy; const laserStartX = player.x + player.width / 2 + laserDx * (player.width * 0.5); const laserStartY = player.y + player.height / 2 + laserDy * (player.height * 0.5); const laserEndX = laserStartX + laserDx * player.laserRange; const laserEndY = laserStartY + laserDy * player.laserRange; let rivalHit = false; for (const rival of rivals) { if (!rival.isDestroyed && !rivalHit) { const rivalCenterX = rival.x + rival.width / 2; const rivalCenterY = rival.y + rival.height / 2; const rivalRadius = rival.width / 2; const sx = rivalCenterX - laserStartX; const sy = rivalCenterY - laserStartY; const segDx = laserEndX - laserStartX; const segDy = laserEndY - laserStartY; const segLenSq = segDx * segDx + segDy * segDy; let t = 0; if (segLenSq > 0) { t = (sx * segDx + sy * segDy) / segLenSq; t = Math.max(0, Math.min(1, t)); } const closestX = laserStartX + t * segDx; const closestY = laserStartY + t * segDy; const distSq = Math.pow(rivalCenterX - closestX, 2) + Math.pow(rivalCenterY - closestY, 2); const hitThreshold = rivalRadius + player.laserWidth / 2; if (distSq < hitThreshold * hitThreshold) { console.log("Rival Hit!"); rival.isDestroyed = true; rivalHit = true; triggerFeedback('destroy_rival'); createDisintegrationEffect(rivalCenterX, rivalCenterY); if (rival.hazardElement && rival.hazardElement.parentNode) { rival.hazardElement.parentNode.removeChild(rival.hazardElement); } break; } } } setTimeout(() => { player.isFiringLaser = false; }, player.laserDuration); }
+        // --- Laser Firing Logic (Updated to handle target coords) ---
+        function fireLaser(targetX = null, targetY = null) {
+            if (player.isFiringLaser || Date.now() - player.lastLaserTime < player.laserCooldown) return; // Check cooldown again
+
+            player.isFiringLaser = true;
+            player.lastLaserTime = Date.now();
+            playSound('laserFire');
+
+            let laserDx, laserDy;
+
+            if (targetX !== null && targetY !== null) {
+                // Calculate direction from player center to tap point
+                const playerCenterX = player.x + player.width / 2;
+                const playerCenterY = player.y + player.height / 2;
+                laserDx = targetX - playerCenterX;
+                laserDy = targetY - playerCenterY;
+                const dist = Math.sqrt(laserDx * laserDx + laserDy * laserDy);
+                if (dist > 0) { // Normalize
+                    laserDx /= dist;
+                    laserDy /= dist;
+                } else { // Default to last move direction if tap is exactly on player center
+                    laserDx = player.lastMoveDx;
+                    laserDy = player.lastMoveDy;
+                }
+            } else {
+                // Fallback to last movement direction (for keyboard 'E')
+                laserDx = player.lastMoveDx;
+                laserDy = player.lastMoveDy;
+            }
+
+            // Calculate laser end point
+            const laserStartX = player.x + player.width / 2 + laserDx * (player.width * 0.4);
+            const laserStartY = player.y + player.height / 2 + laserDy * (player.height * 0.4);
+            const laserEndX = laserStartX + laserDx * player.laserRange;
+            const laserEndY = laserStartY + laserDy * player.laserRange;
+
+            // Collision Check (Unchanged logic)
+            let rivalHit = false;
+            for (const rival of rivals) { if (!rival.isDestroyed && !rivalHit) { const rivalCenterX = rival.x + rival.width / 2; const rivalCenterY = rival.y + rival.height / 2; const rivalRadius = rival.width / 2; const sx = rivalCenterX - laserStartX; const sy = rivalCenterY - laserStartY; const segDx = laserEndX - laserStartX; const segDy = laserEndY - laserStartY; const segLenSq = segDx * segDx + segDy * segDy; let t = 0; if (segLenSq > 0) { t = (sx * segDx + sy * segDy) / segLenSq; t = Math.max(0, Math.min(1, t)); } const closestX = laserStartX + t * segDx; const closestY = laserStartY + t * segDy; const distSq = Math.pow(rivalCenterX - closestX, 2) + Math.pow(rivalCenterY - closestY, 2); const hitThreshold = rivalRadius + player.laserWidth / 2; if (distSq < hitThreshold * hitThreshold) { console.log("Rival Hit!"); rival.isDestroyed = true; rivalHit = true; triggerFeedback('destroy_rival'); createDisintegrationEffect(rivalCenterX, rivalCenterY); if (rival.hazardElement && rival.hazardElement.parentNode) { rival.hazardElement.parentNode.removeChild(rival.hazardElement); } break; } } }
+
+            setTimeout(() => { player.isFiringLaser = false; }, player.laserDuration);
+        }
+
 
         // --- Damage Application Function --- (Unchanged)
         function applyDamage(type) { if (player.isInvulnerable) return; player.isInvulnerable = true; player.lastHitTime = Date.now(); triggerFeedback(type); setTimeout(() => { player.isInvulnerable = false; }, player.invulnerabilityDuration); }
@@ -318,22 +358,103 @@
         // --- Game Over Trigger --- (Unchanged)
         function triggerGameOver() { if (gameState === 'gameOver') return; console.log("Game Over triggered!"); gameState = 'gameOver'; if (animationFrameId) cancelAnimationFrame(animationFrameId); playSound('gameOver'); levelTransitionOverlay.style.display = 'none'; levelTransitionOverlay.style.opacity = 0; winMessage.style.display = 'none'; winMessage.style.opacity = 0; gameOverOverlay.style.display = 'flex'; setTimeout(() => { gameOverOverlay.style.opacity = 1; }, 50); kccStatusElement.innerHTML = '🔴<span>OFFLINE</span>'; kccStatusElement.classList.remove('live'); }
 
-        // --- Game Logic (Update) --- (Unchanged structure, hazard logic updated)
+        // --- Game Logic (Update) ---
         function update() {
             if (gameState !== 'playing') return;
             const now = Date.now(); let currentSpeed = player.speed;
             if (player.isInvulnerable && now - player.lastHitTime > player.invulnerabilityDuration) { player.isInvulnerable = false; }
-            let moveX = 0; let moveY = 0; if (keys['arrowup'] || keys['w']) moveY -= 1; if (keys['arrowdown'] || keys['s']) moveY += 1; if (keys['arrowleft'] || keys['a']) moveX -= 1; if (keys['arrowright'] || keys['d']) moveX += 1;
-            const magnitude = Math.sqrt(moveX * moveX + moveY * moveY);
-            if (magnitude > 0) { const normalizedX = moveX / magnitude; const normalizedY = moveY / magnitude; player.lastMoveDx = normalizedX; player.lastMoveDy = normalizedY; if (player.isDashing) { currentSpeed = player.speed * 3.0; player.x += normalizedX * currentSpeed; player.y += normalizedY * currentSpeed; player.dashParticles.push({ x: player.x + player.width / 2, y: player.y + player.height / 2, life: 20 }); } else { player.x += normalizedX * currentSpeed; player.y += normalizedY * currentSpeed; } }
-            if (keys[' '] && !player.isDashing && now - player.lastDashTime > player.dashCooldown) { player.isDashing = true; player.lastDashTime = now; triggerFeedback('dash'); setTimeout(() => { player.isDashing = false; }, player.dashDuration); }
+
+            // --- Movement Logic (Keyboard/Joystick + Tap Dash Override) ---
+            let moveX = 0; let moveY = 0;
+            let isMoving = false; // Flag to check if any movement input is active
+
+            // Keyboard/Joystick Input
+            if (keys['arrowup'] || keys['w']) { moveY -= 1; isMoving = true; }
+            if (keys['arrowdown'] || keys['s']) { moveY += 1; isMoving = true; }
+            if (keys['arrowleft'] || keys['a']) { moveX -= 1; isMoving = true; }
+            if (keys['arrowright'] || keys['d']) { moveX += 1; isMoving = true; }
+
+            // Tap Dash Logic
+            if (tapDashActive) {
+                if (tapDashDurationTimer > 0) {
+                    // Calculate dash direction towards tap target
+                    const playerCenterX = player.x + player.width / 2;
+                    const playerCenterY = player.y + player.height / 2;
+                    let dashDx = tapDashTargetX - playerCenterX;
+                    let dashDy = tapDashTargetY - playerCenterY;
+                    const dashDist = Math.sqrt(dashDx * dashDx + dashDy * dashDy);
+
+                    if (dashDist > 0) { // Normalize
+                        dashDx /= dashDist;
+                        dashDy /= dashDist;
+                    } else { // Default if tap is exactly on player
+                         dashDx = player.lastMoveDx;
+                         dashDy = player.lastMoveDy;
+                    }
+
+                    // Apply dash movement (overrides joystick/keys for this frame)
+                    const dashSpeed = player.speed * 3.0;
+                    player.x += dashDx * dashSpeed;
+                    player.y += dashDy * dashSpeed;
+                    player.dashParticles.push({ x: player.x + player.width / 2, y: player.y + player.height / 2, life: 20 });
+
+                    tapDashDurationTimer -= (1000 / 60); // Approximate ms per frame
+                    isMoving = true; // Ensure lastMoveDx/Dy are updated even during tap dash
+                    player.lastMoveDx = dashDx; // Update last move direction based on dash
+                    player.lastMoveDy = dashDy;
+
+                } else {
+                    tapDashActive = false; // End tap dash
+                    player.isDashing = false; // Ensure player state is reset
+                }
+            } else {
+                 // Normal Keyboard/Joystick Movement
+                 const magnitude = Math.sqrt(moveX * moveX + moveY * moveY);
+                 if (magnitude > 0) {
+                     const normalizedX = moveX / magnitude;
+                     const normalizedY = moveY / magnitude;
+                     player.lastMoveDx = normalizedX; // Store direction even if not dashing
+                     player.lastMoveDy = normalizedY;
+                     player.x += normalizedX * currentSpeed;
+                     player.y += normalizedY * currentSpeed;
+                 }
+
+                 // Keyboard Dash Activation
+                 if (keys[' '] && !player.isDashing && now - player.lastDashTime > player.dashCooldown) {
+                     player.isDashing = true;
+                     player.lastDashTime = now;
+                     triggerFeedback('dash');
+                     setTimeout(() => { player.isDashing = false; }, player.dashDuration);
+                 }
+                 // Apply keyboard dash speed boost if active
+                 if (player.isDashing && isMoving) { // Only boost if also moving
+                      const boostSpeed = player.speed * 2.0; // Additional speed for keyboard dash
+                      const magnitude = Math.sqrt(moveX * moveX + moveY * moveY);
+                      if (magnitude > 0) { // Apply boost in current move direction
+                           player.x += (moveX / magnitude) * boostSpeed;
+                           player.y += (moveY / magnitude) * boostSpeed;
+                           player.dashParticles.push({ x: player.x + player.width / 2, y: player.y + player.height / 2, life: 20 });
+                      }
+                 }
+            }
+
+
+            // Update dash particles & Keep player in bounds (Unchanged)
             player.dashParticles = player.dashParticles.filter(p => p.life > 0); player.dashParticles.forEach(p => p.life--);
             player.x = Math.max(0, Math.min(canvasWidth - player.width, player.x)); player.y = Math.max(0, Math.min(canvasHeight - player.height, player.y));
             particles.forEach((p, index) => { p.x += p.vx; p.y += p.vy; p.life--; if (p.life <= 0) { particles.splice(index, 1); } });
+
+            // Update Rivals & Check Hazards (Unchanged logic)
             rivals.forEach(rival => { if (rival.isDestroyed) { if (rival.hazardElement && rival.hazardElement.style.opacity !== '0') { rival.hazardElement.style.opacity = '0'; rival.hazardElement.classList.remove('active', 'warning'); } return; } let intendedNextX = rival.x + rival.speed * rival.direction; const patrolLeftBound = rival.startX - rival.patrolRange; const patrolRightBound = rival.startX + rival.patrolRange; let reverseDirection = false; if (rival.direction === 1 && (intendedNextX + rival.width > patrolRightBound || intendedNextX + rival.width > canvasWidth)) { reverseDirection = true; } else if (rival.direction === -1 && (intendedNextX < patrolLeftBound || intendedNextX < 0)) { reverseDirection = true; } if (reverseDirection) { rival.direction *= -1; rival.x = Math.max(0, Math.min(canvasWidth - rival.width, rival.x + rival.speed * rival.direction)); } else { rival.x = Math.max(0, Math.min(canvasWidth - rival.width, intendedNextX)); } rival.y = Math.max(0, Math.min(canvasHeight - rival.height, rival.y)); if (!rival.isInWarning && !rival.hazardActive && now - rival.lastHazardTime > rival.hazardTimer) { rival.isInWarning = true; rival.lastHazardTime = now; playSound('hazardWarn'); const predictDistance = 50; const randomOffsetRange = 40; const targetBaseX = player.x + player.width / 2 + player.lastMoveDx * predictDistance; const targetBaseY = player.y + player.height / 2 + player.lastMoveDy * predictDistance; rival.hazardTargetX = targetBaseX + (Math.random() - 0.5) * randomOffsetRange; rival.hazardTargetY = targetBaseY + (Math.random() - 0.5) * randomOffsetRange; rival.hazardTargetX = Math.max(rivalHazardRadius, Math.min(canvasWidth - rivalHazardRadius, rival.hazardTargetX)); rival.hazardTargetY = Math.max(rivalHazardRadius, Math.min(canvasHeight - rivalHazardRadius, rival.hazardTargetY)); if (rival.hazardElement) { rival.hazardElement.style.left = `${rival.hazardTargetX - rivalHazardRadius}px`; rival.hazardElement.style.top = `${rival.hazardTargetY - rivalHazardRadius}px`; rival.hazardElement.classList.add('warning'); rival.hazardElement.style.opacity = 0.8; } setTimeout(() => { if (!rival.isInWarning) return; rival.isInWarning = false; rival.hazardActive = true; rival.hazardFeedbackGiven = false; rival.dodgeFeedbackGiven = false; if (rival.hazardElement) { rival.hazardElement.classList.remove('warning'); rival.hazardElement.classList.add('active'); } setTimeout(() => { if (!rival.hazardActive) return; rival.hazardActive = false; rival.lastHazardTime = Date.now(); rival.hazardTimer = rival.hazardCooldown + Math.random() * 1500; if (rival.hazardElement) { rival.hazardElement.classList.remove('active'); rival.hazardElement.style.opacity = 0; } }, rivalHazardActiveDuration); }, rivalHazardWarningDuration); } if (rival.hazardActive && !player.isInvulnerable) { const dx = (player.x + player.width / 2) - rival.hazardTargetX; const dy = (player.y + player.height / 2) - rival.hazardTargetY; const distance = Math.sqrt(dx * dx + dy * dy); if (distance < rivalHazardRadius + player.width / 2) { applyDamage('hazard_hit'); } } if (player.isDashing && rival.hazardActive) { const dx = (player.x + player.width / 2) - rival.hazardTargetX; const dy = (player.y + player.height / 2) - rival.hazardTargetY; const distance = Math.sqrt(dx * dx + dy * dy); if (distance < rivalHazardRadius + player.width * 1.5 && distance > rivalHazardRadius - player.width) { if (!rival.dodgeFeedbackGiven) { triggerFeedback('dodge'); rival.dodgeFeedbackGiven = true; setTimeout(() => { rival.dodgeFeedbackGiven = false; }, 500); } } } });
+
+            // Check Player Damage from Direct Rival Collision (Unchanged)
             if (!player.isInvulnerable) { rivals.forEach(rival => { if (!rival.isDestroyed) { if (player.x < rival.x + rival.width && player.x + player.width > rival.x && player.y < rival.y + rival.height && player.y + player.height > rival.y) { applyDamage('rival_collision'); } } }); }
+
+            // Check halfway point (Unchanged)
             if (!halfwayReached && player.x > canvasWidth / 2) { halfwayReached = true; triggerFeedback('halfway'); }
+            // Check Collectible Collision & Target Activation (Unchanged)
             for (let i = collectibles.length - 1; i >= 0; i--) { const collectible = collectibles[i]; if (!collectible.collected) { const dx = (player.x + player.width / 2) - collectible.x; const dy = (player.y + player.height / 2) - collectible.y; const distance = Math.sqrt(dx * dx + dy * dy); if (distance < collectible.radius + player.width / 2) { collectible.collected = true; collectiblesCollected++; triggerFeedback('collect'); updateObjectiveText(); if (collectiblesCollected >= totalCollectibles && !isTargetZoneActive) { isTargetZoneActive = true; console.log("All collectibles gathered! Target zone active."); if(targetZone.element) targetZone.element.classList.add('active'); updateObjectiveText(); } } } }
+            // Check Level Win Condition (Unchanged)
             if (isTargetZoneActive) { const distToTargetX = player.x + player.width / 2 - targetZone.x; const distToTargetY = player.y + player.height / 2 - targetZone.y; const distanceToTarget = Math.sqrt(distToTargetX * distToTargetX + distToTargetY * distToTargetY); if (distanceToTarget < targetZone.radius + player.width / 2) { if (currentLevel < levelConfigs.length) { gameState = 'level_transition'; if (animationFrameId) cancelAnimationFrame(animationFrameId); playSound('win', 'C5'); levelTransitionOverlay.style.display = 'flex'; levelTransitionOverlay.style.opacity = 1; kccStatusElement.innerHTML = '🔴<span>OFFLINE</span>'; kccStatusElement.classList.remove('live'); setTimeout(() => { levelTransitionOverlay.style.display = 'none'; levelTransitionOverlay.style.opacity = 0; currentLevel++; resetGameState(currentLevel - 1); setupGame(currentLevel - 1).then(() => { gameState = 'playing'; kccStatusElement.innerHTML = '🟢<span>LIVE</span>'; kccStatusElement.classList.add('live'); gameLoop(); }); }, 2500); } else { gameState = 'win'; triggerFeedback('win'); winMessage.style.display = 'flex'; winMessage.style.opacity = 1; kccStatusElement.innerHTML = '🔴<span>OFFLINE</span>'; kccStatusElement.classList.remove('live'); if (animationFrameId) cancelAnimationFrame(animationFrameId); console.log("All levels complete!"); } } }
         }
 
@@ -367,10 +488,9 @@
              joystickArea.addEventListener('touchstart', (e) => { e.preventDefault(); joystickActive = true; joystickArea.classList.add('active'); const touch = e.changedTouches[0]; joystickStartX = touch.clientX; joystickStartY = touch.clientY; }, { passive: false });
              joystickArea.addEventListener('touchmove', (e) => { e.preventDefault(); if (!joystickActive) return; const touch = e.changedTouches[0]; const currentX = touch.clientX; const currentY = touch.clientY; const areaRect = joystickArea.getBoundingClientRect(); const areaCenterX = areaRect.left + areaRect.width / 2; const areaCenterY = areaRect.top + areaRect.height / 2; let dx = currentX - areaCenterX; let dy = currentY - areaCenterY; const dist = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxJoystickDist); const knobX = clampedDist * Math.cos(angle); const knobY = clampedDist * Math.sin(angle); joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`; const deadZone = maxJoystickDist * 0.15; const activationThreshold = deadZone * 0.8; keys['arrowup'] = false; keys['arrowdown'] = false; keys['arrowleft'] = false; keys['arrowright'] = false; if (clampedDist > deadZone) { if (dy < -activationThreshold) { keys['arrowup'] = true; } else if (dy > activationThreshold) { keys['arrowdown'] = true; } if (dx < -activationThreshold) { keys['arrowleft'] = true; } else if (dx > activationThreshold) { keys['arrowright'] = true; } } }, { passive: false });
              joystickArea.addEventListener('touchend', (e) => { e.preventDefault(); if (!joystickActive) return; joystickActive = false; joystickArea.classList.remove('active'); joystickKnob.style.transform = `translate(-50%, -50%)`; keys['arrowup'] = false; keys['arrowdown'] = false; keys['arrowleft'] = false; keys['arrowright'] = false; }, { passive: false });
-             btnDash.addEventListener('touchstart', handleActionTouchStart, { passive: false });
-             btnLaser.addEventListener('touchstart', handleActionTouchStart, { passive: false });
-             btnDash.addEventListener('touchend', handleActionTouchEnd, { passive: false });
-             btnLaser.addEventListener('touchend', handleActionTouchEnd, { passive: false });
+             // Add tap listener to canvas (not joystick area)
+             canvas.addEventListener('touchstart', (e) => { if (gameState !== 'playing') return; const touch = e.changedTouches[0]; const rect = canvas.getBoundingClientRect(); const tapX = touch.clientX - rect.left; const tapY = touch.clientY - rect.top; const now = Date.now(); const joystickRect = joystickArea.getBoundingClientRect(); if (touch.clientX >= joystickRect.left && touch.clientX <= joystickRect.right && touch.clientY >= joystickRect.top && touch.clientY <= joystickRect.bottom) { return; } if (now - lastTapTime < doubleTapThreshold) { console.log("Double Tap -> Dash"); if (!player.isDashing && now - player.lastDashTime > player.dashCooldown) { player.isDashing = true; player.lastDashTime = now; tapDashActive = true; tapDashTargetX = tapX; tapDashTargetY = tapY; tapDashDurationTimer = player.dashDuration; triggerFeedback('dash'); } lastTapTime = 0; } else { console.log("Single Tap -> Laser"); if (!player.isFiringLaser && now - player.lastLaserTime > player.laserCooldown) { fireLaser(tapX, tapY); } lastTapTime = now; lastTapX = tapX; lastTapY = tapY; } }, { passive: false });
+
              console.log("Touch listeners added.");
         };
 
