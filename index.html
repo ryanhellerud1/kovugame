@@ -11,43 +11,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         /* Base styles */
-        html, body {
-            height: 100%; /* Full height */
-            width: 100%; /* Full width */
-            margin: 0;
-            padding: 0;
-            overflow: hidden; /* Prevent scrolling */
-            touch-action: none; /* Prevent default touch behaviors */
-            font-family: 'Press Start 2P', cursive;
-            background-color: #1a1a2e;
-            color: #e0e0e0;
-            display: flex; /* Use flexbox for overall layout */
-            justify-content: center;
-            align-items: center;
-            -webkit-user-select: none; -ms-user-select: none; user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-        #game-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 800px; /* Max width on desktop */
-            height: 100%; /* Take full available height */
-            padding: 5px;
-            box-sizing: border-box;
-        }
-        #game-container {
-            border: 4px solid #4a4a8a;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(74, 74, 138, 0.7);
-            position: relative; /* Needed for absolute children */
-            width: 100%;
-            flex-grow: 1; /* Takes up available vertical space */
-            min-height: 200px;
-            background: linear-gradient(135deg, #16213e, #0f3460);
-            overflow: hidden; /* Clip canvas/elements */
-        }
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; touch-action: none; font-family: 'Press Start 2P', cursive; background-color: #1a1a2e; color: #e0e0e0; display: flex; flex-direction: column; justify-content: center; align-items: center; -webkit-user-select: none; -ms-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+        #game-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 800px; height: 100%; padding: 5px; box-sizing: border-box; }
+        #game-container { border: 4px solid #4a4a8a; border-radius: 15px; box-shadow: 0 0 20px rgba(74, 74, 138, 0.7); position: relative; width: 100%; flex-grow: 1; min-height: 200px; background: linear-gradient(135deg, #16213e, #0f3460); overflow: hidden; }
         #gameCanvas { display: block; width: 100%; height: 100%; border-radius: 10px; }
         /* Overlays */
         #intro-overlay, #level-transition-overlay, #win-message, #game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; z-index: 100; padding: 20px; border-radius: 10px; transition: opacity 0.5s ease; box-sizing: border-box; }
@@ -90,7 +56,6 @@
         .kovu-svg { width: 35px; height: 35px; fill: #e74c3c; stroke: #1a1a2e; stroke-width: 1.5; }
         .kovu-eye { fill: #00ffff; stroke: #00ffff; stroke-width: 0.5; }
         .kovu-cybernetics { fill: none; stroke: #7f8c8d; stroke-width: 2; }
-        /* Changed rival fill back to yellow */
         .dogen-svg { width: 38px; height: 38px; fill: #f1c40f; /* Yellow */ stroke: #1a1a2e; stroke-width: 1.5; }
         .dogen-features { fill: #1a1a2e; }
 
@@ -116,18 +81,9 @@
 
         /* --- Mobile Overrides --- */
         @media (max-width: 768px) and (orientation: portrait), (max-height: 500px) { /* Apply styles for smaller screens/heights */
-            #game-wrapper {
-                 max-height: none; /* Allow full height */
-                 padding: 0; /* Remove padding */
-            }
-            #game-container {
-                 border: none; /* Remove border */
-                 border-radius: 0; /* Remove rounding */
-                 box-shadow: none; /* Remove shadow */
-            }
-            #gameCanvas {
-                 border-radius: 0; /* Remove rounding */
-            }
+            #game-wrapper { max-height: none; padding: 0; }
+            #game-container { border: none; border-radius: 0; box-shadow: none; }
+            #gameCanvas { border-radius: 0; }
 
             #touch-controls-container {
                 display: flex; /* Show controls on mobile */
@@ -142,34 +98,15 @@
                 align-items: flex-end; /* Align controls to bottom */
             }
             /* Joystick Styles */
-            #joystick-area {
-                width: 110px; /* Slightly smaller */
-                height: 110px;
-                position: relative; pointer-events: auto; border-radius: 50%; background: none;
-            }
+            #joystick-area { width: 110px; height: 110px; position: relative; pointer-events: auto; border-radius: 50%; background: none; }
             #joystick-base { position: absolute; width: 100%; height: 100%; border-radius: 50%; background-color: rgba(80, 80, 80, 0.4); border: 2px solid rgba(255, 255, 255, 0.4); top: 0; left: 0; }
             #joystick-knob { position: absolute; width: 55px; height: 55px; background-color: rgba(200, 200, 200, 0.6); border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; transition: background-color 0.1s ease; }
             #joystick-area.active #joystick-knob { background-color: rgba(255, 255, 255, 0.7); }
 
             /* Action Buttons */
-            #action-buttons {
-                display: flex; /* Show action buttons */
-                gap: 10px; /* Reduced gap */
-                pointer-events: auto; /* Capture touch */
-            }
-             .touch-button { /* Action buttons */
-                 background-color: rgba(200, 200, 200, 0.5); /* Semi-transparent */
-                 border: 2px solid rgba(255, 255, 255, 0.7);
-                 pointer-events: auto; /* Capture touch */
-                 width: 60px; /* Slightly smaller */
-                 height: 60px;
-                 font-size: 0.5rem; /* Smaller text */
-                 line-height: 1.1; text-align: center; padding: 2px;
-             }
-             .touch-button:active {
-                 background-color: rgba(255, 255, 255, 0.7);
-                 transform: scale(0.95);
-             }
+            #action-buttons { display: flex; gap: 10px; pointer-events: auto; }
+             .touch-button { background-color: rgba(200, 200, 200, 0.5); border: 2px solid rgba(255, 255, 255, 0.7); pointer-events: auto; width: 60px; height: 60px; font-size: 0.5rem; line-height: 1.1; text-align: center; padding: 2px; }
+             .touch-button:active { background-color: rgba(255, 255, 255, 0.7); transform: scale(0.95); }
 
             #controls-hint { display: none; }
         }
@@ -295,8 +232,8 @@
         function restartGame() { /* ... Unchanged ... */ winMessage.style.display = 'none'; winMessage.style.opacity = 0; gameOverOverlay.style.display = 'none'; gameOverOverlay.style.opacity = 0; startGame(); }
         function resetGameState(levelIndex) { /* ... Unchanged ... */ const levelConf = levelConfigs[levelIndex]; if (!levelConf) return; player.isDashing = false; player.lastDashTime = 0; player.dashParticles = []; player.isFiringLaser = false; player.lastLaserTime = 0; player.isInvulnerable = false; player.lastHitTime = 0; /* tapDashActive removed */ rivals.forEach(rival => { rival.isDestroyed = false; rival.hazardActive = false; rival.isInWarning = false; rival.hazardFeedbackGiven = false; rival.dodgeFeedbackGiven = false; if (rival.hazardElement) { rival.hazardElement.classList.remove('active', 'warning'); rival.hazardElement.style.opacity = 0; if (!rival.hazardElement.parentNode) { gameContainer.appendChild(rival.hazardElement); } } }); approvalMeter.value = 10; feedbackArea.innerHTML = ''; halfwayReached = false; particles.length = 0; collectiblesCollected = 0; isTargetZoneActive = false; if(targetZone.element) targetZone.element.classList.remove('active'); }
 
-        // --- Input Handling --- (Unchanged)
-        // Keyboard Handling
+        // --- Input Handling ---
+        // Keyboard Handling (Unchanged)
         window.addEventListener('keydown', (e) => { const key = e.key.toLowerCase(); keys[key] = true; if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "e"].includes(key)) { e.preventDefault(); } if (key === 'e' && gameState === 'playing' && !player.isFiringLaser && Date.now() - player.lastLaserTime > player.laserCooldown) { fireLaser(); } });
         window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
         // Touch Handling (Action Buttons)
@@ -316,7 +253,7 @@
         // --- Game Over Trigger --- (Unchanged)
         function triggerGameOver() { if (gameState === 'gameOver') return; console.log("Game Over triggered!"); gameState = 'gameOver'; if (animationFrameId) cancelAnimationFrame(animationFrameId); playSound('gameOver'); levelTransitionOverlay.style.display = 'none'; levelTransitionOverlay.style.opacity = 0; winMessage.style.display = 'none'; winMessage.style.opacity = 0; gameOverOverlay.style.display = 'flex'; setTimeout(() => { gameOverOverlay.style.opacity = 1; }, 50); kccStatusElement.innerHTML = '🔴<span>OFFLINE</span>'; kccStatusElement.classList.remove('live'); }
 
-        // --- Game Logic (Update - Modified Movement) ---
+        // --- Game Logic (Update - Modified Movement Speed) ---
         function update(deltaTime) { // Accept deltaTime
             if (gameState !== 'playing') return;
             const now = Date.now();
