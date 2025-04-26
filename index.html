@@ -11,45 +11,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         /* Base styles */
-        html, body {
-            height: 100%; /* Ensure body takes full height */
-            margin: 0;
-            padding: 0;
-            overflow: hidden; /* Prevent scrolling */
-            touch-action: none; /* Prevent default touch behaviors like pinch-zoom */
-            font-family: 'Press Start 2P', cursive;
-            background-color: #1a1a2e;
-            color: #e0e0e0;
-            display: flex; /* Use flexbox for layout */
-            flex-direction: column; /* Stack elements vertically */
-            justify-content: center; /* Center vertically */
-            align-items: center; /* Center horizontally */
-            -webkit-user-select: none; /* Safari */
-            -ms-user-select: none; /* IE 10+ */
-            user-select: none; /* Standard */
-            -webkit-tap-highlight-color: transparent; /* Remove tap highlight */
-        }
-        #game-wrapper { /* New wrapper for game + controls */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 800px; /* Max width for desktop */
-            height: 100%; /* Take full available height */
-            padding: 5px; /* Small padding around */
-        }
-        #game-container {
-            border: 4px solid #4a4a8a;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(74, 74, 138, 0.7);
-            position: relative;
-            width: 100%; /* Take full width of wrapper */
-            /* Adjusted height - use flex-grow instead of fixed vh */
-            flex-grow: 1; /* Allow game container to take up available space */
-            min-height: 200px; /* Minimum height */
-            background: linear-gradient(135deg, #16213e, #0f3460);
-            overflow: hidden;
-        }
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; touch-action: none; font-family: 'Press Start 2P', cursive; background-color: #1a1a2e; color: #e0e0e0; display: flex; flex-direction: column; justify-content: center; align-items: center; -webkit-user-select: none; -ms-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+        #game-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 800px; height: 100%; padding: 5px; }
+        #game-container { border: 4px solid #4a4a8a; border-radius: 15px; box-shadow: 0 0 20px rgba(74, 74, 138, 0.7); position: relative; width: 100%; flex-grow: 1; min-height: 200px; background: linear-gradient(135deg, #16213e, #0f3460); overflow: hidden; }
         #gameCanvas { display: block; width: 100%; height: 100%; border-radius: 10px; }
         /* Overlays */
         #intro-overlay, #level-transition-overlay, #win-message, #game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; z-index: 100; padding: 20px; border-radius: 10px; transition: opacity 0.5s ease; }
@@ -57,25 +21,25 @@
         #level-transition-overlay, #win-message, #game-over-overlay { display: none; opacity: 0; }
         .intro-panel { display: none; width: 80%; max-width: 500px; }
         .intro-panel.active { display: block; }
-        .intro-panel img { max-width: 100%; height: auto; max-height: 150px; /* Reduced image height */ margin-bottom: 10px; border: 2px solid #4a4a8a; border-radius: 8px; }
-        .intro-panel p { font-size: 0.7rem; /* Smaller text */ line-height: 1.4; margin-bottom: 15px; }
+        .intro-panel img { max-width: 100%; height: auto; max-height: 150px; margin-bottom: 10px; border: 2px solid #4a4a8a; border-radius: 8px; }
+        .intro-panel p { font-size: 0.7rem; line-height: 1.4; margin-bottom: 15px; }
         /* Buttons */
-        button { font-family: 'Press Start 2P', cursive; background: linear-gradient(45deg, #f95738, #ff8c42); color: white; border: none; padding: 8px 15px; /* Smaller padding */ border-radius: 8px; cursor: pointer; font-size: 0.8rem; /* Smaller font */ text-transform: uppercase; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); margin-top: 8px; }
+        button { font-family: 'Press Start 2P', cursive; background: linear-gradient(45deg, #f95738, #ff8c42); color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; text-transform: uppercase; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); margin-top: 8px; }
         button:hover { transform: translateY(-2px); box-shadow: 0 6px 10px rgba(249, 87, 56, 0.5); }
         button:active { transform: translateY(1px); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); }
         /* UI */
-        #ui-container { position: absolute; top: 5px; left: 5px; right: 5px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; z-index: 50; font-size: 0.6rem; /* Smaller UI font */ text-shadow: 1px 1px 2px rgba(0,0,0,0.7); }
+        #ui-container { position: absolute; top: 5px; left: 5px; right: 5px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; z-index: 50; font-size: 0.6rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); }
         #kcc-status, #level-indicator { background-color: rgba(0, 0, 0, 0.5); padding: 4px 8px; border-radius: 5px; }
         #kcc-status { border: 1px solid rgba(255, 0, 0, 0.5); }
         #kcc-status.live { background-color: rgba(0, 255, 0, 0.7); border-color: rgba(0, 255, 0, 0.5); }
         #kcc-status span { margin-left: 4px; }
         #objective-display { background-color: rgba(0, 0, 0, 0.5); padding: 4px 8px; border-radius: 5px; text-align: right; max-width: 60%; }
-        #approval-meter-container { position: absolute; bottom: 5px; left: 5px; width: 120px; /* Smaller meter */ font-size: 0.5rem; background-color: rgba(0, 0, 0, 0.5); padding: 4px; border-radius: 5px; pointer-events: none; z-index: 50; }
+        #approval-meter-container { position: absolute; bottom: 5px; left: 5px; width: 120px; font-size: 0.5rem; background-color: rgba(0, 0, 0, 0.5); padding: 4px; border-radius: 5px; pointer-events: none; z-index: 50; }
         #approval-meter { width: 100%; height: 12px; -webkit-appearance: none; appearance: none; border: 1px solid #4a4a8a; border-radius: 3px; overflow: hidden; }
         #approval-meter::-webkit-progress-bar { background-color: #333; border-radius: 3px; }
         #approval-meter::-webkit-progress-value { background: linear-gradient(90deg, #1e90ff, #00ffff); border-radius: 0px; transition: width 0.3s ease; }
         #approval-meter::-moz-progress-bar { background: linear-gradient(90deg, #1e90ff, #00ffff); border-radius: 3px; transition: width 0.3s ease; }
-        #feedback-area { position: absolute; bottom: 25px; /* Adjusted position */ right: 5px; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; z-index: 50; max-height: 80px; overflow: hidden; }
+        #feedback-area { position: absolute; bottom: 25px; right: 5px; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; z-index: 50; max-height: 80px; overflow: hidden; }
         .feedback-message { background-color: rgba(74, 74, 138, 0.8); color: white; padding: 3px 6px; border-radius: 4px; margin-top: 4px; font-size: 0.5rem; opacity: 1; transition: opacity 1s ease-out, transform 0.5s ease-out; transform: translateX(0); }
         .feedback-message.negative { background-color: rgba(200, 0, 0, 0.8); }
         .feedback-message.fade-out { opacity: 0; transform: translateX(20px); }
@@ -110,84 +74,54 @@
         .disintegration-particle {}
 
         /* --- Touch Controls --- */
-        #touch-controls-container { /* New container for controls below game */
-             width: 100%;
-             max-width: 800px; /* Match game max width */
-             height: 120px; /* Fixed height for controls area */
-             display: flex;
-             justify-content: space-between;
-             align-items: center;
-             padding: 5px 15px; /* Padding */
-             flex-shrink: 0; /* Prevent shrinking */
-             box-sizing: border-box;
+        #touch-controls-container { width: 100%; max-width: 800px; height: 120px; display: flex; justify-content: space-between; align-items: center; padding: 5px 15px; flex-shrink: 0; box-sizing: border-box; }
+        .touch-button { /* Action Buttons */
+            width: 65px; height: 65px; background-color: rgba(200, 200, 200, 0.4); border: 2px solid rgba(255, 255, 255, 0.6); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.6rem; color: white; text-shadow: 1px 1px 2px black; cursor: pointer; pointer-events: auto; touch-action: manipulation; -webkit-user-select: none; -ms-user-select: none; user-select: none; transition: transform 0.1s ease; line-height: 1.1; text-align: center; padding: 2px;
         }
-        .touch-button {
-            width: 55px; /* Slightly larger */
-            height: 55px;
-            background-color: rgba(200, 200, 200, 0.4);
-            border: 2px solid rgba(255, 255, 255, 0.6);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.3rem; /* Slightly larger icon */
-            color: white;
-            text-shadow: 1px 1px 2px black;
-            cursor: pointer;
-            pointer-events: auto;
-            touch-action: manipulation;
-            -webkit-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            transition: transform 0.1s ease; /* Add transition for active state */
-        }
-        .touch-button:active {
-            background-color: rgba(255, 255, 255, 0.6);
-            transform: scale(0.95); /* Slight shrink on press */
-        }
-        #dpad {
-            position: relative;
-            width: 130px; /* Larger container */
-            height: 130px;
-            pointer-events: auto;
-        }
-        #dpad .touch-button {
-            position: absolute;
-        }
-        #btn-up { top: 0; left: 50%; transform: translateX(-50%); }
-        #btn-down { bottom: 0; left: 50%; transform: translateX(-50%); }
-        #btn-left { left: 0; top: 50%; transform: translateY(-50%); }
-        #btn-right { right: 0; top: 50%; transform: translateY(-50%); }
+        .touch-button:active { background-color: rgba(255, 255, 255, 0.6); transform: scale(0.95); }
 
-        #action-buttons {
-            display: flex;
-            gap: 15px; /* Adjusted gap */
-            pointer-events: auto;
+        /* Joystick Styles */
+        #joystick-area {
+            width: 120px; /* Area for the joystick */
+            height: 120px;
+            position: relative;
+            pointer-events: auto; /* Enable touch on this area */
+            border-radius: 50%; /* Optional: visual guide */
+            /* background-color: rgba(255, 255, 255, 0.1); */ /* Optional visual guide */
         }
-        #btn-dash, #btn-laser {
-             width: 65px; /* Larger action buttons */
-             height: 65px;
-             font-size: 0.6rem; /* Smaller text */
-             line-height: 1.1;
-             text-align: center;
-             padding: 2px; /* Ensure text fits */
+        #joystick-base {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: rgba(80, 80, 80, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            top: 0;
+            left: 0;
         }
+        #joystick-knob {
+            position: absolute;
+            width: 55px; /* Size of the draggable knob */
+            height: 55px;
+            background-color: rgba(200, 200, 200, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Center initially */
+            pointer-events: none; /* Knob doesn't capture events directly */
+            transition: background-color 0.1s ease; /* Smooth transition */
+        }
+         #joystick-area.active #joystick-knob {
+             background-color: rgba(255, 255, 255, 0.6); /* Highlight when active */
+         }
+
+
+        #action-buttons { display: flex; gap: 15px; pointer-events: auto; }
+
          /* Hide keyboard controls hint on smaller screens */
-         #controls-hint {
-             display: block;
-             text-align: center;
-             font-size: 0.6rem; /* Smaller hint text */
-             margin-top: 5px;
-             color: #aaa;
-         }
-         @media (max-width: 640px) { /* Example breakpoint for mobile */
-             #controls-hint {
-                 display: none;
-             }
-             #touch-controls-container {
-                 height: 110px; /* Slightly adjust height if needed */
-             }
-         }
+         #controls-hint { display: block; text-align: center; font-size: 0.6rem; margin-top: 5px; color: #aaa; }
+         @media (max-width: 640px) { #controls-hint { display: none; } #touch-controls-container { height: 110px; } }
 
     </style>
 </head>
@@ -210,18 +144,18 @@
         </div>
 
         <div id="touch-controls-container">
-            <div id="dpad">
-                <div id="btn-up" class="touch-button">▲</div>
-                <div id="btn-down" class="touch-button">▼</div>
-                <div id="btn-left" class="touch-button">◀</div>
-                <div id="btn-right" class="touch-button">▶</div>
+            <div id="joystick-area">
+                <div id="joystick-base"></div>
+                <div id="joystick-knob"></div>
             </div>
             <div id="action-buttons">
-                <div id="btn-laser" class="touch-button">LASER</div> <div id="btn-dash" class="touch-button">DASH</div> </div>
+                <div id="btn-laser" class="touch-button">LASER</div>
+                <div id="btn-dash" class="touch-button">DASH</div>
+            </div>
         </div>
     </div>
 
-    <div id="controls-hint">Controls: Arrow Keys/WASD/Touch, Space/Touch to Dash, E/Touch to Fire Laser</div>
+    <div id="controls-hint">Controls: Arrow Keys/WASD/Joystick, Space/Touch to Dash, E/Touch to Fire Laser</div>
 
     <script>
         // --- Game Setup ---
@@ -237,11 +171,10 @@
         const approvalMeter = document.getElementById('approval-meter');
         const feedbackArea = document.getElementById('feedback-area');
         const levelIndicator = document.getElementById('level-indicator');
-        // Touch Buttons (references remain the same)
-        const btnUp = document.getElementById('btn-up');
-        const btnDown = document.getElementById('btn-down');
-        const btnLeft = document.getElementById('btn-left');
-        const btnRight = document.getElementById('btn-right');
+        // Joystick Elements
+        const joystickArea = document.getElementById('joystick-area');
+        const joystickKnob = document.getElementById('joystick-knob');
+        // Action Buttons
         const btnDash = document.getElementById('btn-dash');
         const btnLaser = document.getElementById('btn-laser');
 
@@ -253,6 +186,14 @@
         let collectiblesCollected = 0;
         let totalCollectibles = 0;
         let isTargetZoneActive = false;
+
+        // Joystick state variables
+        let joystickActive = false;
+        let joystickStartX = 0;
+        let joystickStartY = 0;
+        const joystickRadius = joystickArea.offsetWidth / 2; // Radius of the base
+        const knobRadius = joystickKnob.offsetWidth / 2;
+        const maxJoystickDist = joystickRadius - knobRadius; // Max distance knob can move from center
 
         // --- Level Configuration --- (Unchanged)
         const levelConfigs = [ { level: 1, numRivals: 3, numCollectibles: 5, targetXRatio: 0.85, targetYRatio: 0.8, objectiveText: "Objective: Reach the Viral Stage!", rivalSpeedMultiplier: 1.0, rivalHazardCooldownBase: 3500 }, { level: 2, numRivals: 4, numCollectibles: 7, targetXRatio: 0.15, targetYRatio: 0.2, objectiveText: "Objective: Reach the Upload Point!", rivalSpeedMultiplier: 1.1, rivalHazardCooldownBase: 3000 } ];
@@ -284,14 +225,112 @@
         function restartGame() { /* ... Unchanged ... */ winMessage.style.display = 'none'; winMessage.style.opacity = 0; gameOverOverlay.style.display = 'none'; gameOverOverlay.style.opacity = 0; startGame(); }
         function resetGameState(levelIndex) { /* ... Unchanged ... */ const levelConf = levelConfigs[levelIndex]; if (!levelConf) return; player.isDashing = false; player.lastDashTime = 0; player.dashParticles = []; player.isFiringLaser = false; player.lastLaserTime = 0; player.isInvulnerable = false; player.lastHitTime = 0; rivals.forEach(rival => { rival.isDestroyed = false; rival.hazardActive = false; rival.isInWarning = false; rival.hazardFeedbackGiven = false; rival.dodgeFeedbackGiven = false; if (rival.hazardElement) { rival.hazardElement.classList.remove('active', 'warning'); rival.hazardElement.style.opacity = 0; if (!rival.hazardElement.parentNode) { gameContainer.appendChild(rival.hazardElement); } } }); approvalMeter.value = 10; feedbackArea.innerHTML = ''; halfwayReached = false; particles.length = 0; collectiblesCollected = 0; isTargetZoneActive = false; if(targetZone.element) targetZone.element.classList.remove('active'); }
 
-        // --- Input Handling --- (Unchanged)
-        // Keyboard Handling
+        // --- Input Handling ---
+        // Keyboard Handling (Unchanged)
         window.addEventListener('keydown', (e) => { const key = e.key.toLowerCase(); keys[key] = true; if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "e"].includes(key)) { e.preventDefault(); } if (key === 'e' && gameState === 'playing' && !player.isFiringLaser && Date.now() - player.lastLaserTime > player.laserCooldown) { fireLaser(); } });
         window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
-        // Touch Handling
-        function handleTouchStart(event) { event.preventDefault(); const targetId = event.target.id; switch (targetId) { case 'btn-up': keys['arrowup'] = true; break; case 'btn-down': keys['arrowdown'] = true; break; case 'btn-left': keys['arrowleft'] = true; break; case 'btn-right': keys['arrowright'] = true; break; case 'btn-dash': keys[' '] = true; break; case 'btn-laser': if (gameState === 'playing' && !player.isFiringLaser && Date.now() - player.lastLaserTime > player.laserCooldown) { fireLaser(); } break; } }
-        function handleTouchEnd(event) { event.preventDefault(); for (const touch of event.changedTouches) { const element = document.elementFromPoint(touch.clientX, touch.clientY); if (element && element.classList.contains('touch-button')) { const targetId = element.id; switch (targetId) { case 'btn-up': keys['arrowup'] = false; break; case 'btn-down': keys['arrowdown'] = false; break; case 'btn-left': keys['arrowleft'] = false; break; case 'btn-right': keys['arrowright'] = false; break; case 'btn-dash': keys[' '] = false; break; } } else { if (keys['arrowup']) keys['arrowup'] = false; if (keys['arrowdown']) keys['arrowdown'] = false; if (keys['arrowleft']) keys['arrowleft'] = false; if (keys['arrowright']) keys['arrowright'] = false; if (keys[' ']) keys[' '] = false; } } }
-        // Add listeners in window.onload
+
+        // --- Touch Handling (Action Buttons) ---
+        function handleActionTouchStart(event) {
+            event.preventDefault();
+            const targetId = event.target.id;
+            if (targetId === 'btn-dash') {
+                keys[' '] = true; // Simulate space press
+            } else if (targetId === 'btn-laser') {
+                // Trigger laser directly on touch, respecting cooldown
+                if (gameState === 'playing' && !player.isFiringLaser && Date.now() - player.lastLaserTime > player.laserCooldown) {
+                    fireLaser();
+                }
+            }
+        }
+        function handleActionTouchEnd(event) {
+            event.preventDefault();
+            const targetId = event.target.id;
+             if (targetId === 'btn-dash') {
+                keys[' '] = false; // Simulate space release
+            }
+            // No action needed for laser on touchend
+        }
+        btnDash.addEventListener('touchstart', handleActionTouchStart, { passive: false });
+        btnLaser.addEventListener('touchstart', handleActionTouchStart, { passive: false });
+        btnDash.addEventListener('touchend', handleActionTouchEnd, { passive: false });
+        btnLaser.addEventListener('touchend', handleActionTouchEnd, { passive: false });
+
+
+        // --- Joystick Touch Handling ---
+        joystickArea.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            joystickActive = true;
+            joystickArea.classList.add('active'); // Visual feedback
+            const touch = e.changedTouches[0];
+            joystickStartX = touch.clientX;
+            joystickStartY = touch.clientY;
+        }, { passive: false });
+
+        joystickArea.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!joystickActive) return;
+
+            const touch = e.changedTouches[0];
+            const currentX = touch.clientX;
+            const currentY = touch.clientY;
+
+            // Calculate displacement relative to joystick *area* center for angle/magnitude
+            const areaRect = joystickArea.getBoundingClientRect();
+            const areaCenterX = areaRect.left + areaRect.width / 2;
+            const areaCenterY = areaRect.top + areaRect.height / 2;
+
+            let dx = currentX - areaCenterX;
+            let dy = currentY - areaCenterY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+
+            // Clamp distance for visual knob movement
+            const clampedDist = Math.min(dist, maxJoystickDist);
+            const knobX = clampedDist * Math.cos(angle);
+            const knobY = clampedDist * Math.sin(angle);
+
+            // Update knob position (relative to its center)
+            joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+
+            // --- Determine movement direction based on angle and distance threshold ---
+            const deadZone = maxJoystickDist * 0.2; // Ignore small movements near center
+            keys['arrowup'] = false;
+            keys['arrowdown'] = false;
+            keys['arrowleft'] = false;
+            keys['arrowright'] = false;
+
+            if (clampedDist > deadZone) {
+                // Determine primary direction based on angle
+                // Angles in radians: Right=0, Down=PI/2, Left=PI, Up=-PI/2 (or 3PI/2)
+                if (angle > -Math.PI * 0.75 && angle <= -Math.PI * 0.25) { // Up
+                    keys['arrowup'] = true;
+                } else if (angle > Math.PI * 0.25 && angle <= Math.PI * 0.75) { // Down
+                    keys['arrowdown'] = true;
+                } else if (angle > Math.PI * 0.75 || angle <= -Math.PI * 0.75) { // Left
+                    keys['arrowleft'] = true;
+                } else if (angle > -Math.PI * 0.25 && angle <= Math.PI * 0.25) { // Right
+                    keys['arrowright'] = true;
+                }
+            }
+
+        }, { passive: false });
+
+        joystickArea.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (!joystickActive) return;
+
+            joystickActive = false;
+            joystickArea.classList.remove('active');
+            // Reset knob position
+            joystickKnob.style.transform = `translate(-50%, -50%)`;
+            // Reset all movement keys
+            keys['arrowup'] = false;
+            keys['arrowdown'] = false;
+            keys['arrowleft'] = false;
+            keys['arrowright'] = false;
+        }, { passive: false });
+
 
         // --- Laser Firing Logic --- (Unchanged)
         function fireLaser() { player.isFiringLaser = true; player.lastLaserTime = Date.now(); playSound('laserFire'); const laserDx = player.lastMoveDx; const laserDy = player.lastMoveDy; const laserStartX = player.x + player.width / 2 + laserDx * (player.width * 0.5); const laserStartY = player.y + player.height / 2 + laserDy * (player.height * 0.5); const laserEndX = laserStartX + laserDx * player.laserRange; const laserEndY = laserStartY + laserDy * player.laserRange; let rivalHit = false; for (const rival of rivals) { if (!rival.isDestroyed && !rivalHit) { const rivalCenterX = rival.x + rival.width / 2; const rivalCenterY = rival.y + rival.height / 2; const rivalRadius = rival.width / 2; const sx = rivalCenterX - laserStartX; const sy = rivalCenterY - laserStartY; const segDx = laserEndX - laserStartX; const segDy = laserEndY - laserStartY; const segLenSq = segDx * segDx + segDy * segDy; let t = 0; if (segLenSq > 0) { t = (sx * segDx + sy * segDy) / segLenSq; t = Math.max(0, Math.min(1, t)); } const closestX = laserStartX + t * segDx; const closestY = laserStartY + t * segDy; const distSq = Math.pow(rivalCenterX - closestX, 2) + Math.pow(rivalCenterY - closestY, 2); const hitThreshold = rivalRadius + player.laserWidth / 2; if (distSq < hitThreshold * hitThreshold) { console.log("Rival Hit!"); rival.isDestroyed = true; rivalHit = true; triggerFeedback('destroy_rival'); createDisintegrationEffect(rivalCenterX, rivalCenterY); if (rival.hazardElement && rival.hazardElement.parentNode) { rival.hazardElement.parentNode.removeChild(rival.hazardElement); } break; } } } setTimeout(() => { player.isFiringLaser = false; }, player.laserDuration); }
@@ -343,25 +382,18 @@
         function gameLoop() { if (gameState === 'playing') { update(); draw(); animationFrameId = requestAnimationFrame(gameLoop); } else { console.log("Game loop paused - state:", gameState); } }
 
         // --- Initial Setup Call ---
-        // Use window.onload to ensure DOM is ready before setup
         window.onload = () => {
              console.log("Window loaded.");
-             // Initial setup for level 1 (or current level if state is preserved)
+             // Initial setup for level 1
              setupGame(currentLevel - 1);
              // Add touch listeners after DOM is loaded
-             btnUp.addEventListener('touchstart', handleTouchStart, { passive: false });
-             btnDown.addEventListener('touchstart', handleTouchStart, { passive: false });
-             btnLeft.addEventListener('touchstart', handleTouchStart, { passive: false });
-             btnRight.addEventListener('touchstart', handleTouchStart, { passive: false });
-             btnDash.addEventListener('touchstart', handleTouchStart, { passive: false });
-             btnLaser.addEventListener('touchstart', handleTouchStart, { passive: false });
-
-             btnUp.addEventListener('touchend', handleTouchEnd, { passive: false });
-             btnDown.addEventListener('touchend', handleTouchEnd, { passive: false });
-             btnLeft.addEventListener('touchend', handleTouchEnd, { passive: false });
-             btnRight.addEventListener('touchend', handleTouchEnd, { passive: false });
-             btnDash.addEventListener('touchend', handleTouchEnd, { passive: false });
-             btnLaser.addEventListener('touchend', handleTouchEnd, { passive: false });
+             joystickArea.addEventListener('touchstart', (e) => { e.preventDefault(); joystickActive = true; joystickArea.classList.add('active'); const touch = e.changedTouches[0]; joystickStartX = touch.clientX; joystickStartY = touch.clientY; }, { passive: false });
+             joystickArea.addEventListener('touchmove', (e) => { e.preventDefault(); if (!joystickActive) return; const touch = e.changedTouches[0]; const currentX = touch.clientX; const currentY = touch.clientY; const areaRect = joystickArea.getBoundingClientRect(); const areaCenterX = areaRect.left + areaRect.width / 2; const areaCenterY = areaRect.top + areaRect.height / 2; let dx = currentX - areaCenterX; let dy = currentY - areaCenterY; const dist = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxJoystickDist); const knobX = clampedDist * Math.cos(angle); const knobY = clampedDist * Math.sin(angle); joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`; const deadZone = maxJoystickDist * 0.2; keys['arrowup'] = false; keys['arrowdown'] = false; keys['arrowleft'] = false; keys['arrowright'] = false; if (clampedDist > deadZone) { if (angle > -Math.PI * 0.75 && angle <= -Math.PI * 0.25) { keys['arrowup'] = true; } else if (angle > Math.PI * 0.25 && angle <= Math.PI * 0.75) { keys['arrowdown'] = true; } else if (angle > Math.PI * 0.75 || angle <= -Math.PI * 0.75) { keys['arrowleft'] = true; } else if (angle > -Math.PI * 0.25 && angle <= Math.PI * 0.25) { keys['arrowright'] = true; } } }, { passive: false });
+             joystickArea.addEventListener('touchend', (e) => { e.preventDefault(); if (!joystickActive) return; joystickActive = false; joystickArea.classList.remove('active'); joystickKnob.style.transform = `translate(-50%, -50%)`; keys['arrowup'] = false; keys['arrowdown'] = false; keys['arrowleft'] = false; keys['arrowright'] = false; }, { passive: false });
+             btnDash.addEventListener('touchstart', handleActionTouchStart, { passive: false });
+             btnLaser.addEventListener('touchstart', handleActionTouchStart, { passive: false });
+             btnDash.addEventListener('touchend', handleActionTouchEnd, { passive: false });
+             btnLaser.addEventListener('touchend', handleActionTouchEnd, { passive: false });
              console.log("Touch listeners added.");
         };
 
