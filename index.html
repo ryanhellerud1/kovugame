@@ -11,9 +11,43 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         /* Base styles */
-        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; touch-action: none; font-family: 'Press Start 2P', cursive; background-color: #1a1a2e; color: #e0e0e0; display: flex; flex-direction: column; justify-content: center; align-items: center; -webkit-user-select: none; -ms-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
-        #game-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 800px; height: 100%; padding: 5px; box-sizing: border-box; }
-        #game-container { border: 4px solid #4a4a8a; border-radius: 15px; box-shadow: 0 0 20px rgba(74, 74, 138, 0.7); position: relative; width: 100%; flex-grow: 1; min-height: 200px; background: linear-gradient(135deg, #16213e, #0f3460); overflow: hidden; }
+        html, body {
+            height: 100%; /* Full height */
+            width: 100%; /* Full width */
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Prevent scrolling */
+            touch-action: none; /* Prevent default touch behaviors */
+            font-family: 'Press Start 2P', cursive;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            display: flex; /* Use flexbox for overall layout */
+            justify-content: center;
+            align-items: center;
+            -webkit-user-select: none; -ms-user-select: none; user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px; /* Max width on desktop */
+            height: 100%; /* Take full available height */
+            padding: 5px;
+            box-sizing: border-box;
+        }
+        #game-container {
+            border: 4px solid #4a4a8a;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(74, 74, 138, 0.7);
+            position: relative; /* Needed for absolute children */
+            width: 100%;
+            flex-grow: 1; /* Takes up available vertical space */
+            min-height: 200px;
+            background: linear-gradient(135deg, #16213e, #0f3460);
+            overflow: hidden; /* Clip canvas/elements */
+        }
         #gameCanvas { display: block; width: 100%; height: 100%; border-radius: 10px; }
         /* Overlays */
         #intro-overlay, #level-transition-overlay, #win-message, #game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; z-index: 100; padding: 20px; border-radius: 10px; transition: opacity 0.5s ease; box-sizing: border-box; }
@@ -56,6 +90,7 @@
         .kovu-svg { width: 35px; height: 35px; fill: #e74c3c; stroke: #1a1a2e; stroke-width: 1.5; }
         .kovu-eye { fill: #00ffff; stroke: #00ffff; stroke-width: 0.5; }
         .kovu-cybernetics { fill: none; stroke: #7f8c8d; stroke-width: 2; }
+        /* Changed rival fill back to yellow */
         .dogen-svg { width: 38px; height: 38px; fill: #f1c40f; /* Yellow */ stroke: #1a1a2e; stroke-width: 1.5; }
         .dogen-features { fill: #1a1a2e; }
 
@@ -80,17 +115,26 @@
         #touch-controls-container { display: none; }
 
         /* --- Mobile Overrides --- */
-        @media (max-width: 768px) { /* Apply styles for screens <= 768px */
-            #game-wrapper { max-height: none; padding: 0; }
-            #game-container { border: none; border-radius: 0; box-shadow: none; }
-            #gameCanvas { border-radius: 0; }
+        @media (max-width: 768px) and (orientation: portrait), (max-height: 500px) { /* Apply styles for smaller screens/heights */
+            #game-wrapper {
+                 max-height: none; /* Allow full height */
+                 padding: 0; /* Remove padding */
+            }
+            #game-container {
+                 border: none; /* Remove border */
+                 border-radius: 0; /* Remove rounding */
+                 box-shadow: none; /* Remove shadow */
+            }
+            #gameCanvas {
+                 border-radius: 0; /* Remove rounding */
+            }
 
             #touch-controls-container {
                 display: flex; /* Show controls on mobile */
                 position: absolute; /* Overlay on game container */
                 bottom: 0; left: 0; right: 0;
                 height: auto; /* Let content determine height */
-                padding: 15px; /* Padding around controls */
+                padding: 10px; /* Reduced padding */
                 z-index: 60; /* Above canvas, below overlays */
                 pointer-events: none; /* Container doesn't block */
                 background: none;
@@ -98,15 +142,34 @@
                 align-items: flex-end; /* Align controls to bottom */
             }
             /* Joystick Styles */
-            #joystick-area { width: 130px; height: 130px; position: relative; pointer-events: auto; border-radius: 50%; background: none; }
+            #joystick-area {
+                width: 110px; /* Slightly smaller */
+                height: 110px;
+                position: relative; pointer-events: auto; border-radius: 50%; background: none;
+            }
             #joystick-base { position: absolute; width: 100%; height: 100%; border-radius: 50%; background-color: rgba(80, 80, 80, 0.4); border: 2px solid rgba(255, 255, 255, 0.4); top: 0; left: 0; }
-            #joystick-knob { position: absolute; width: 60px; height: 60px; background-color: rgba(200, 200, 200, 0.6); border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; transition: background-color 0.1s ease; }
+            #joystick-knob { position: absolute; width: 55px; height: 55px; background-color: rgba(200, 200, 200, 0.6); border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; transition: background-color 0.1s ease; }
             #joystick-area.active #joystick-knob { background-color: rgba(255, 255, 255, 0.7); }
 
             /* Action Buttons */
-            #action-buttons { display: flex; gap: 15px; pointer-events: auto; }
-             .touch-button { background-color: rgba(200, 200, 200, 0.5); border: 2px solid rgba(255, 255, 255, 0.7); pointer-events: auto; width: 65px; height: 65px; font-size: 0.6rem; line-height: 1.1; text-align: center; padding: 2px; }
-             .touch-button:active { background-color: rgba(255, 255, 255, 0.7); transform: scale(0.95); }
+            #action-buttons {
+                display: flex; /* Show action buttons */
+                gap: 10px; /* Reduced gap */
+                pointer-events: auto; /* Capture touch */
+            }
+             .touch-button { /* Action buttons */
+                 background-color: rgba(200, 200, 200, 0.5); /* Semi-transparent */
+                 border: 2px solid rgba(255, 255, 255, 0.7);
+                 pointer-events: auto; /* Capture touch */
+                 width: 60px; /* Slightly smaller */
+                 height: 60px;
+                 font-size: 0.5rem; /* Smaller text */
+                 line-height: 1.1; text-align: center; padding: 2px;
+             }
+             .touch-button:active {
+                 background-color: rgba(255, 255, 255, 0.7);
+                 transform: scale(0.95);
+             }
 
             #controls-hint { display: none; }
         }
@@ -168,7 +231,7 @@
         // Joystick Elements
         const joystickArea = document.getElementById('joystick-area');
         const joystickKnob = document.getElementById('joystick-knob');
-        // Action Buttons
+        // Action Buttons References Restored
         const btnDash = document.getElementById('btn-dash');
         const btnLaser = document.getElementById('btn-laser');
 
@@ -241,7 +304,7 @@
         function handleActionTouchEnd(event) { event.preventDefault(); const targetId = event.target.id; if (targetId === 'btn-dash') { keys[' '] = false; } }
         // Joystick Touch Handling
         joystickArea.addEventListener('touchstart', (e) => { e.preventDefault(); joystickActive = true; joystickArea.classList.add('active'); const touch = e.changedTouches[0]; joystickStartX = touch.clientX; joystickStartY = touch.clientY; }, { passive: false });
-        joystickArea.addEventListener('touchmove', (e) => { e.preventDefault(); if (!joystickActive) return; if (!joystickDimensionsCalculated || maxJoystickDist <= 0) return; const touch = e.changedTouches[0]; const currentX = touch.clientX; const currentY = touch.clientY; const areaRect = joystickArea.getBoundingClientRect(); const areaCenterX = areaRect.left + areaRect.width / 2; const areaCenterY = areaRect.top + areaRect.height / 2; let dx = currentX - areaCenterX; let dy = currentY - areaCenterY; const dist = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxJoystickDist); const knobX = clampedDist * Math.cos(angle); const knobY = clampedDist * Math.sin(angle); joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`; const deadZone = maxJoystickDist * 0.1; if (clampedDist > deadZone) { const magnitude = Math.sqrt(dx * dx + dy * dy); joystickDx = dx / magnitude; joystickDy = dy / magnitude; /* joystickMagnitude removed */ } else { joystickDx = 0; joystickDy = 0; /* joystickMagnitude removed */ } }, { passive: false });
+        joystickArea.addEventListener('touchmove', (e) => { e.preventDefault(); if (!joystickActive) return; if (!joystickDimensionsCalculated || maxJoystickDist <= 0) return; const touch = e.changedTouches[0]; const currentX = touch.clientX; const currentY = touch.clientY; const areaRect = joystickArea.getBoundingClientRect(); const areaCenterX = areaRect.left + areaRect.width / 2; const areaCenterY = areaRect.top + areaRect.height / 2; let dx = currentX - areaCenterX; let dy = currentY - areaCenterY; const dist = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxJoystickDist); const knobX = clampedDist * Math.cos(angle); const knobY = clampedDist * Math.sin(angle); joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`; const deadZone = maxJoystickDist * 0.15; if (clampedDist > deadZone) { const magnitude = Math.sqrt(dx * dx + dy * dy); joystickDx = dx / magnitude; joystickDy = dy / magnitude; /* joystickMagnitude removed */ } else { joystickDx = 0; joystickDy = 0; /* joystickMagnitude removed */ } }, { passive: false });
         joystickArea.addEventListener('touchend', (e) => { e.preventDefault(); if (!joystickActive) return; joystickActive = false; joystickArea.classList.remove('active'); joystickKnob.style.transform = `translate(-50%, -50%)`; joystickDx = 0; joystickDy = 0; /* joystickMagnitude removed */ }, { passive: false });
 
         // --- Laser Firing Logic --- (Unchanged)
@@ -388,7 +451,8 @@
             if (!lastTimestamp) {
                 lastTimestamp = timestamp; // Initialize on first frame
             }
-            const deltaTime = (timestamp - lastTimestamp) / 1000; // Delta time in seconds
+            // Calculate delta time, ensuring it's not excessively large (e.g., if tab was inactive)
+            const deltaTime = Math.min((timestamp - lastTimestamp) / 1000, 0.1); // Max delta 100ms (10fps)
             lastTimestamp = timestamp;
 
             // Ensure joystick dimensions are calculated
