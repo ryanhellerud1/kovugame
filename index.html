@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kovu: #CommunityRescue Arena MVP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        /* Base styles mostly unchanged */
+        body { font-family: 'Press Start 2P', cursive; background-color: #1a1a2e; color: #e0e0e0; overflow: hidden; display: flex; justify-content: center; align-items: center; min-height: 100vh; flex-direction: column; }
+        #game-container { border: 4px solid #4a4a8a; border-radius: 15px; box-shadow: 0 0 20px rgba(74, 74, 138, 0.7); position: relative; width: 90vw; max-width: 800px; height: 70vh; max-height: 600px; background: linear-gradient(135deg, #16213e, #0f3460); margin-bottom: 20px; overflow: hidden; }
+        #gameCanvas { display: block; width: 100%; height: 100%; border-radius: 10px; }
+        #intro-overlay, #level-transition-overlay, #win-message { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; z-index: 100; padding: 20px; border-radius: 10px; }
+        #intro-overlay { display: flex; /* Show intro initially */ }
+        #level-transition-overlay, #win-message { display: none; /* Hidden initially */ }
+
+        .intro-panel { display: none; width: 80%; max-width: 500px; }
+        .intro-panel.active { display: block; }
+        .intro-panel img { max-width: 100%; height: auto; max-height: 200px; margin-bottom: 15px; border: 2px solid #4a4a8a; border-radius: 8px; }
+        .intro-panel p { font-size: 0.8rem; line-height: 1.4; margin-bottom: 20px; }
+        button { font-family: 'Press Start 2P', cursive; background: linear-gradient(45deg, #f95738, #ff8c42); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; text-transform: uppercase; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); margin-top: 10px; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 10px rgba(249, 87, 56, 0.5); }
+        button:active { transform: translateY(1px); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); }
+        #ui-container { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; z-index: 50; font-size: 0.7rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); }
+        #kcc-status, #level-indicator { background-color: rgba(0, 0, 0, 0.5); padding: 5px 10px; border-radius: 5px; } /* Combined style */
+        #kcc-status { border: 1px solid rgba(255, 0, 0, 0.5); } /* Keep border for KCC */
+        #kcc-status.live { background-color: rgba(0, 255, 0, 0.7); border-color: rgba(0, 255, 0, 0.5); }
+        #kcc-status span { margin-left: 5px; }
+        #objective-display { background-color: rgba(0, 0, 0, 0.5); padding: 5px 10px; border-radius: 5px; text-align: right; max-width: 50%; /* Prevent overlap */ }
+        #approval-meter-container { position: absolute; bottom: 10px; left: 10px; width: 150px; font-size: 0.6rem; background-color: rgba(0, 0, 0, 0.5); padding: 5px; border-radius: 5px; pointer-events: none; z-index: 50; }
+        #approval-meter { width: 100%; height: 15px; -webkit-appearance: none; appearance: none; border: 1px solid #4a4a8a; border-radius: 3px; overflow: hidden; }
+        #approval-meter::-webkit-progress-bar { background-color: #333; border-radius: 3px; }
+        #approval-meter::-webkit-progress-value { background: linear-gradient(90deg, #1e90ff, #00ffff); border-radius: 0px; transition: width 0.3s ease; }
+        #approval-meter::-moz-progress-bar { background: linear-gradient(90deg, #1e90ff, #00ffff); border-radius: 3px; transition: width 0.3s ease; }
+        #feedback-area { position: absolute; bottom: 40px; right: 10px; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; z-index: 50; max-height: 100px; overflow: hidden; }
+        .feedback-message { background-color: rgba(74, 74, 138, 0.8); color: white; padding: 4px 8px; border-radius: 4px; margin-top: 5px; font-size: 0.6rem; opacity: 1; transition: opacity 1s ease-out, transform 0.5s ease-out; transform: translateX(0); }
+        .feedback-message.negative { background-color: rgba(200, 0, 0, 0.8); /* Red background for negative feedback */ }
+        .feedback-message.fade-out { opacity: 0; transform: translateX(20px); }
+        #level-transition-overlay h2, #win-message h2 { font-size: 1.5rem; margin-bottom: 15px; }
+        #level-transition-overlay p, #win-message p { font-size: 0.9rem; margin-bottom: 20px; }
+
+        /* Player Invulnerability Flash */
+        .player-invulnerable {
+            animation: flash-invulnerable 0.2s infinite alternate;
+        }
+        @keyframes flash-invulnerable {
+             from { opacity: 1; }
+             to { opacity: 0.5; }
+        }
+
+
+        /* SVGs (Unchanged) */
+        .kovu-svg { width: 35px; height: 35px; fill: #e74c3c; stroke: #1a1a2e; stroke-width: 1.5; }
+        .kovu-eye { fill: #00ffff; stroke: #00ffff; stroke-width: 0.5; }
+        .kovu-cybernetics { fill: none; stroke: #7f8c8d; stroke-width: 2; }
+        .dogen-svg { width: 38px; height: 38px; fill: #f1c40f; stroke: #1a1a2e; stroke-width: 1.5; }
+        .dogen-features { fill: #1a1a2e; }
+
+        /* Target Zone (Unchanged) */
+        .target-zone { position: absolute; border: 3px dashed #00ff00; border-radius: 50%; box-shadow: 0 0 15px rgba(0, 255, 0, 0.6); pointer-events: none; z-index: 5; }
+
+        /* Hazard Styling (Unchanged) */
+        .dogen-hazard { position: absolute; border-radius: 50%; background-color: transparent; pointer-events: none; z-index: 5; opacity: 0; transform: scale(0.9); border: 3px solid transparent; box-shadow: 0 0 0px transparent; transition: opacity 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease; }
+        .dogen-hazard.warning { opacity: 0.8; border-color: #ffd700; transform: scale(0.95); animation: pulse-warning 0.7s infinite alternate; }
+        .dogen-hazard.active { opacity: 1; border-style: dashed; border-color: #ff6347; background-color: rgba(255, 99, 71, 0.25); box-shadow: 0 0 25px rgba(255, 99, 71, 0.7); transform: scale(1); animation: none; }
+        @keyframes pulse-warning { from { box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); } to { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); } }
+
+        /* Styles for Collectibles & Dash Trail (Applied via Canvas) */
+        .collectible {}
+        .dash-particle {}
+        .laser-beam {}
+        .disintegration-particle {}
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="intro-overlay">
+             <div class="intro-panel active" id="intro-1"> <img src="https://placehold.co/400x200/333333/cccccc?text=Abandoned+Kovu" alt="Abandoned Kovu" onerror="this.src='https://placehold.co/400x200/333333/cccccc?text=Image+Error'"> <p>Abandoned... like a delisted coin. Colors faded, feeling worthless...</p> <button onclick="showIntroPanel(2)">Next</button> </div>
+             <div class="intro-panel" id="intro-2"> <img src="https://placehold.co/400x200/555555/dddddd?text=KCC+Rescue" alt="KCC Rescue" onerror="this.src='https://placehold.co/400x200/555555/dddddd?text=Image+Error'"> <p>"Subject Kovu located. Vital signs critical. Initiating community rescue protocol." The KCC found me.</p> <button onclick="showIntroPanel(3)">Next</button> </div>
+             <div class="intro-panel" id="intro-3"> <img src="https://placehold.co/400x200/1a1a2e/00ffff?text=Upgrade+Bay" alt="Upgrade Bay" onerror="this.src='https://placehold.co/400x200/1a1a2e/00ffff?text=Image+Error'"> <p>"The Community pooled resources... gave you upgrades! This 'Community Link' keeps us connected. Think of it as your personal live feed!"</p> <button onclick="showIntroPanel(4)">Next</button> </div>
+             <div class="intro-panel" id="intro-4"> <img src="https://placehold.co/400x200/0f3460/ffffff?text=Entering+Arena" alt="Entering Arena" onerror="this.src='https://placehold.co/400x200/0f3460/ffffff?text=Image+Error'"> <p>"Go out there, engage, climb the ranks! We'll be watching. Make us proud!" ... A second chance?</p> <button onclick="startGame()">Enter the Arena!</button> </div>
+        </div>
+
+        <div id="level-transition-overlay">
+            <h2>Level Complete!</h2>
+            <p>Prepare for the next challenge...</p>
+            </div>
+
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="ui-container">
+            <div> <div id="kcc-status">🔴<span>OFFLINE</span></div>
+                 <div id="level-indicator" class="mt-2">Level: 1</div> </div>
+            <div id="objective-display">Objective: Reach the Viral Stage!</div>
+        </div>
+        <div id="approval-meter-container"> Community Approval: <progress id="approval-meter" value="10" max="100"></progress> </div>
+        <div id="feedback-area"></div>
+        <div id="win-message"> <h2>All Levels Complete!</h2> <p>#KovuWins! The Community is ecstatic!</p> <button onclick="restartGame()">Play Again?</button> </div>
+    </div>
+    <div class="text-center text-xs mt-2">Controls: Arrow Keys/WASD to Move, Spacebar to Dash, E to Fire Laser</div>
+
+    <script>
+        // --- Game Setup ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameContainer = document.getElementById('game-container');
+        const introOverlay = document.getElementById('intro-overlay');
+        const winMessage = document.getElementById('win-message');
+        const levelTransitionOverlay = document.getElementById('level-transition-overlay');
+        const kccStatusElement = document.getElementById('kcc-status');
+        const objectiveDisplay = document.getElementById('objective-display');
+        const approvalMeter = document.getElementById('approval-meter');
+        const feedbackArea = document.getElementById('feedback-area');
+        const levelIndicator = document.getElementById('level-indicator');
+
+        let canvasWidth, canvasHeight;
+        let gameState = 'intro';
+        let keys = {};
+        let animationFrameId;
+        let currentLevel = 1;
+
+        // --- Level Configuration --- (Unchanged)
+        const levelConfigs = [ { level: 1, numRivals: 3, numCollectibles: 5, targetXRatio: 0.85, targetYRatio: 0.8, objectiveText: "Objective: Reach the Viral Stage!", rivalSpeedMultiplier: 1.0, rivalHazardCooldownBase: 4500 }, { level: 2, numRivals: 4, numCollectibles: 7, targetXRatio: 0.15, targetYRatio: 0.2, objectiveText: "Objective: Reach the Upload Point!", rivalSpeedMultiplier: 1.1, rivalHazardCooldownBase: 4000 } ];
+
+        // --- Sound Effects Setup ---
+        let soundsReady = false; let synths = {};
+        function setupSounds() { try {
+            synths.dash = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 } }).toDestination();
+            synths.collect = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.05, release: 0.2 } }).toDestination();
+            synths.win = new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.05, decay: 0.2, sustain: 0.3, release: 0.5 } }).toDestination();
+            synths.feedbackPositive = new Tone.PluckSynth().toDestination();
+            synths.feedbackNegative = new Tone.NoiseSynth({ noise: { type: 'pink' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
+            synths.hazardWarn = new Tone.Synth({ oscillator: { type: 'pulse', width: 0.3 }, envelope: { attack: 0.01, decay: 0.05, sustain: 0.1, release: 0.1 } }).toDestination();
+            synths.laserFire = new Tone.Synth({ oscillator: { type: 'pwm', modulationFrequency: 0.2 }, envelope: { attack: 0.005, decay: 0.2, sustain: 0.01, release: 0.1 } }).toDestination();
+            synths.rivalDestroyed = new Tone.MetalSynth({ frequency: 100, envelope: { attack: 0.01, decay: 0.4, release: 0.2 }, harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5 }).toDestination();
+            // New sound for player taking damage
+            synths.playerHit = new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.2 } }).toDestination();
+            soundsReady = true; console.log("Tone.js Synths Initialized");
+            } catch (error) { console.error("Error initializing Tone.js:", error); }
+        }
+        function playSound(type, note = null, duration = '8n') { if (!soundsReady || !synths[type]) return; try {
+            // Added playerHit to the list of non-note synths
+            if (type === 'feedbackNegative' || type === 'dash' || type === 'hazardWarn' || type === 'laserFire' || type === 'rivalDestroyed' || type === 'playerHit') {
+                 if (type === 'feedbackNegative') synths[type].triggerAttackRelease(duration);
+                 else if (type === 'dash') synths[type].triggerAttackRelease('C4', duration);
+                 else if (type === 'hazardWarn') synths[type].triggerAttackRelease('A4', '16n');
+                 else if (type === 'laserFire') synths[type].triggerAttackRelease('G5', '16n');
+                 else if (type === 'rivalDestroyed') synths[type].triggerAttackRelease();
+                 else if (type === 'playerHit') synths[type].triggerAttackRelease('C3', '8n'); // Low hit sound
+            } else if (note) {
+                synths[type].triggerAttackRelease(note, duration);
+            } } catch (error) { console.error(`Error playing sound ${type}:`, error); }
+        }
+
+        // --- Game Objects ---
+        const player = {
+            x: 50, y: 50, width: 35, height: 35, speed: 3, color: '#e74c3c', eyeColor: '#00ffff',
+            isDashing: false, dashCooldown: 1500, lastDashTime: 0, dashDuration: 250, dashParticles: [],
+            laserCooldown: 2000, lastLaserTime: 0, isFiringLaser: false, laserDuration: 150, laserRange: 300, laserWidth: 5, lastMoveDx: 1, lastMoveDy: 0,
+            // Damage State
+            isInvulnerable: false,
+            invulnerabilityDuration: 1000, // 1 second
+            lastHitTime: 0,
+            // SVG (Unchanged)
+            svg: `<svg viewBox="0 0 100 100" class="kovu-svg" xmlns="http://www.w3.org/2000/svg"><path d="M50 10 C 25 10, 10 30, 10 55 S 25 100, 50 100 S 90 80, 90 55 S 75 10, 50 10 Z" /><path d="M30 25 L 20 5 L 40 15 Z" /><path d="M70 25 L 80 5 L 60 15 Z" /><path d="M40 65 Q 50 80, 60 65 Z" fill="#f8caca" /><circle cx="50" cy="68" r="4" fill="#333" /><circle cx="38" cy="45" r="5" fill="#fff"><animate attributeName="r" values="5;4;5" dur="1.5s" repeatCount="indefinite"/></circle><circle cx="38" cy="45" r="2.5" fill="#333"/><circle cx="62" cy="45" r="7" class="kovu-eye"/><circle cx="62" cy="45" r="3" fill="#fff"/><path d="M 62 45 L 75 35" class="kovu-cybernetics" /><path d="M 80 55 Q 75 65 70 60" class="kovu-cybernetics" /></svg>`,
+            img: null
+        };
+        // Other objects (Unchanged definitions)
+        const rivals = []; const rivalBaseSpeed = 1; const rivalHazardRadius = 50; const rivalHazardWarningDuration = 800; const rivalHazardActiveDuration = 1000; const rivalSvg = `<svg viewBox="0 0 100 100" class="dogen-svg" xmlns="http://www.w3.org/2000/svg"><path d="M50 5 C 15 5, 5 35, 5 55 S 15 105, 50 105 S 95 75, 95 55 S 85 5, 50 5 Z" /><path d="M25 30 Q 10 10, 35 15 Z" /><path d="M75 30 Q 90 10, 65 15 Z" /><ellipse cx="35" cy="50" rx="6" ry="8" class="dogen-features"/><ellipse cx="65" cy="50" rx="6" ry="8" class="dogen-features"/><path d="M40 70 Q 50 85, 60 70 T 40 70" fill="#fff" stroke="#aaa" stroke-width="1"/><ellipse cx="50" cy="70" rx="5" ry="3" class="dogen-features"/></svg>`; let rivalImg = null;
+        const targetZone = { x: 600, y: 400, radius: 40, color: 'rgba(0, 255, 0, 0.3)', borderColor: '#00ff00', element: null };
+        const collectibles = []; const collectibleRadius = 10; const collectibleWidth = 15; const collectibleHeight = 10;
+        const particles = [];
+
+        // Updated Feedback Messages
+        const feedbackMessages = [
+            { trigger: 'dash', text: '#KovuBoost!', approval: 3, sound: 'dash' },
+            { trigger: 'halfway', text: 'Looking good! #Progress', approval: 5, sound: 'feedbackPositive', note: 'G4' },
+            { trigger: 'dodge', text: 'Nice dodge! #Skillz', approval: 4, sound: 'feedbackPositive', note: 'A4' },
+            // Renamed hazard_enter to hazard_hit and made it negative
+            { trigger: 'hazard_hit', text: 'Hazard Hit! Approval Lost!', approval: -15, sound: 'playerHit', negative: true },
+            // New message for direct rival collision
+            { trigger: 'rival_collision', text: 'Collision! Ouch!', approval: -10, sound: 'playerHit', negative: true },
+            { trigger: 'collect', text: 'Data Packet! +Approval!', approval: 5, sound: 'collect', note: 'C5' },
+            { trigger: 'destroy_rival', text: 'Rival Deleted! #LaserFocus', approval: 10, sound: 'rivalDestroyed' },
+            { trigger: 'win', text: '#Victory! Community Morale Soaring!', approval: 20, sound: 'win', note: 'C5' }
+        ];
+        let halfwayReached = false;
+
+        // --- Initialization --- (Unchanged functions: loadSvg, spawnCollectibles, createDisintegrationEffect, setupGame, showIntroPanel, startGame, proceedWithGameStart, restartGame)
+        function loadSvg(svgString, width, height) { return new Promise((resolve) => { const blob = new Blob([svgString], { type: 'image/svg+xml' }); const url = URL.createObjectURL(blob); const img = new Image(); img.onload = () => { URL.revokeObjectURL(url); resolve(img); }; img.onerror = () => { console.error("Failed to load SVG image"); resolve(null); }; img.width = width; img.height = height; img.src = url; }); }
+        function spawnCollectibles(levelConf) { collectibles.length = 0; const numToSpawn = levelConf.numCollectibles; for (let i = 0; i < numToSpawn; i++) { let placed = false; while (!placed) { const potentialX = collectibleRadius + Math.random() * (canvasWidth - collectibleRadius * 2); const potentialY = collectibleRadius + Math.random() * (canvasHeight - collectibleRadius * 2); const distToPlayerStart = Math.sqrt(Math.pow(potentialX - canvasWidth / 4, 2) + Math.pow(potentialY - canvasHeight / 2, 2)); const distToTarget = Math.sqrt(Math.pow(potentialX - targetZone.x, 2) + Math.pow(potentialY - targetZone.y, 2)); let tooCloseToRivalStart = false; for(const r of rivals) { if (!r.isDestroyed) { const distToRival = Math.sqrt(Math.pow(potentialX - r.startX, 2) + Math.pow(potentialY - r.startY, 2)); if (distToRival < r.width * 2) { tooCloseToRivalStart = true; break; } } } if (distToPlayerStart > player.width * 2 && distToTarget > targetZone.radius * 1.5 && !tooCloseToRivalStart) { collectibles.push({ x: potentialX, y: potentialY, radius: collectibleRadius, collected: false }); placed = true; } } } console.log(`Level ${levelConf.level}: Spawned ${collectibles.length} Collectibles`); }
+        function createDisintegrationEffect(x, y, count = 20) { for (let i = 0; i < count; i++) { const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 2 + 1; particles.push({ x: x, y: y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, radius: Math.random() * 2.5 + 1, color: `rgba(${240 + Math.random() * 15}, ${190 + Math.random() * 30}, ${15 + Math.random() * 30}, ${0.8 + Math.random() * 0.2})`, life: 20 + Math.random() * 20, initialLife: 40 }); } }
+        async function setupGame(levelIndex) { const levelConf = levelConfigs[levelIndex]; if (!levelConf) { console.error("Invalid level index:", levelIndex); gameState = 'win'; winMessage.style.display = 'flex'; return; } console.log(`Setting up Level ${levelConf.level}`); currentLevel = levelConf.level; canvasWidth = gameContainer.clientWidth; canvasHeight = gameContainer.clientHeight; canvas.width = canvasWidth; canvas.height = canvasHeight; levelIndicator.textContent = `Level: ${levelConf.level}`; objectiveDisplay.textContent = levelConf.objectiveText; player.x = canvasWidth / 4; player.y = canvasHeight / 2; player.lastMoveDx = 1; player.lastMoveDy = 0; targetZone.x = canvasWidth * levelConf.targetXRatio; targetZone.y = canvasHeight * levelConf.targetYRatio; if (!player.img) player.img = await loadSvg(player.svg, player.width, player.height); if (!rivalImg) rivalImg = await loadSvg(rivalSvg, 38, 38); rivals.length = 0; document.querySelectorAll('.dogen-hazard').forEach(el => el.remove()); particles.length = 0; for (let i = 0; i < levelConf.numRivals; i++) { const startX = canvasWidth * (0.5 + Math.random() * 0.3); const startY = canvasHeight * (0.15 + Math.random() * 0.7); const patrolRange = 70 + Math.random() * 60; const speed = rivalBaseSpeed * levelConf.rivalSpeedMultiplier * (0.8 + Math.random() * 0.4); const hazardCooldown = levelConf.rivalHazardCooldownBase * (0.9 + Math.random() * 0.2); const hazardElement = document.createElement('div'); hazardElement.className = 'dogen-hazard'; hazardElement.style.width = `${rivalHazardRadius * 2}px`; hazardElement.style.height = `${rivalHazardRadius * 2}px`; gameContainer.appendChild(hazardElement); rivals.push({ x: startX, y: startY, width: 38, height: 38, speed: speed, direction: Math.random() < 0.5 ? 1 : -1, patrolRange: patrolRange, startX: startX, startY: startY, img: rivalImg, hazardActive: false, isInWarning: false, lastHazardTime: Date.now() - Math.random() * hazardCooldown, hazardElement: hazardElement, hazardFeedbackGiven: false, dodgeFeedbackGiven: false, isDestroyed: false, hazardCooldown: hazardCooldown }); } console.log(`Level ${levelConf.level}: Initialized ${rivals.length} Rivals`); if (!targetZone.element) { targetZone.element = document.createElement('div'); targetZone.element.className = 'target-zone'; gameContainer.appendChild(targetZone.element); } targetZone.element.style.left = `${targetZone.x - targetZone.radius}px`; targetZone.element.style.top = `${targetZone.y - targetZone.radius}px`; targetZone.element.style.width = `${targetZone.radius * 2}px`; targetZone.element.style.height = `${targetZone.radius * 2}px`; spawnCollectibles(levelConf); console.log(`Level ${levelConf.level} setup complete.`); }
+        window.addEventListener('resize', () => { if (gameState === 'playing' || gameState === 'level_transition') { setupGame(currentLevel - 1); } });
+        function showIntroPanel(panelNumber) { document.querySelectorAll('.intro-panel').forEach(p => p.classList.remove('active')); document.getElementById(`intro-${panelNumber}`).classList.add('active'); }
+        function startGame() { currentLevel = 1; if (Tone.context.state !== 'running') { Tone.start().then(() => { console.log("AudioContext started!"); setupSounds(); proceedWithGameStart(); }).catch(e => { console.error("Tone.start() failed:", e); proceedWithGameStart(); }); } else { if (!soundsReady) setupSounds(); proceedWithGameStart(); } }
+        function proceedWithGameStart() { introOverlay.style.display = 'none'; winMessage.style.display = 'none'; levelTransitionOverlay.style.display = 'none'; resetGameState(currentLevel - 1); setupGame(currentLevel - 1).then(() => { gameState = 'playing'; kccStatusElement.innerHTML = '🟢<span>LIVE</span>'; kccStatusElement.classList.add('live'); if (animationFrameId) cancelAnimationFrame(animationFrameId); gameLoop(); console.log("Game Started - Level", currentLevel); }); }
+        function restartGame() { winMessage.style.display = 'none'; startGame(); }
+
+        // Updated resetGameState for player invulnerability
+        function resetGameState(levelIndex) {
+            const levelConf = levelConfigs[levelIndex];
+            if (!levelConf) return;
+            player.isDashing = false; player.lastDashTime = 0; player.dashParticles = [];
+            player.isFiringLaser = false; player.lastLaserTime = 0;
+            player.isInvulnerable = false; player.lastHitTime = 0; // Reset damage state
+            rivals.forEach(rival => { rival.isDestroyed = false; rival.hazardActive = false; rival.isInWarning = false; rival.hazardFeedbackGiven = false; rival.dodgeFeedbackGiven = false; if (rival.hazardElement) { rival.hazardElement.classList.remove('active', 'warning'); rival.hazardElement.style.opacity = 0; if (!rival.hazardElement.parentNode) { gameContainer.appendChild(rival.hazardElement); } } });
+            approvalMeter.value = 10; feedbackArea.innerHTML = ''; halfwayReached = false; particles.length = 0;
+        }
+
+        // --- Input Handling --- (Unchanged)
+        window.addEventListener('keydown', (e) => { const key = e.key.toLowerCase(); keys[key] = true; if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "e"].includes(key)) { e.preventDefault(); } if (key === 'e' && gameState === 'playing' && !player.isFiringLaser && Date.now() - player.lastLaserTime > player.laserCooldown) { fireLaser(); } });
+        window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+
+        // --- Laser Firing Logic --- (Unchanged)
+        function fireLaser() { player.isFiringLaser = true; player.lastLaserTime = Date.now(); playSound('laserFire'); const laserDx = player.lastMoveDx; const laserDy = player.lastMoveDy; const laserStartX = player.x + player.width / 2 + laserDx * (player.width * 0.5); const laserStartY = player.y + player.height / 2 + laserDy * (player.height * 0.5); const laserEndX = laserStartX + laserDx * player.laserRange; const laserEndY = laserStartY + laserDy * player.laserRange; let rivalHit = false; for (const rival of rivals) { if (!rival.isDestroyed && !rivalHit) { const rivalCenterX = rival.x + rival.width / 2; const rivalCenterY = rival.y + rival.height / 2; const rivalRadius = rival.width / 2; const sx = rivalCenterX - laserStartX; const sy = rivalCenterY - laserStartY; const segDx = laserEndX - laserStartX; const segDy = laserEndY - laserStartY; const segLenSq = segDx * segDx + segDy * segDy; let t = 0; if (segLenSq > 0) { t = (sx * segDx + sy * segDy) / segLenSq; t = Math.max(0, Math.min(1, t)); } const closestX = laserStartX + t * segDx; const closestY = laserStartY + t * segDy; const distSq = Math.pow(rivalCenterX - closestX, 2) + Math.pow(rivalCenterY - closestY, 2); const hitThreshold = rivalRadius + player.laserWidth / 2; if (distSq < hitThreshold * hitThreshold) { console.log("Rival Hit!"); rival.isDestroyed = true; rivalHit = true; triggerFeedback('destroy_rival'); createDisintegrationEffect(rivalCenterX, rivalCenterY); if (rival.hazardElement && rival.hazardElement.parentNode) { rival.hazardElement.parentNode.removeChild(rival.hazardElement); } break; } } } setTimeout(() => { player.isFiringLaser = false; }, player.laserDuration); }
+
+        // --- Damage Application Function ---
+        function applyDamage(type) {
+            if (player.isInvulnerable) return; // Can't take damage while invulnerable
+
+            player.isInvulnerable = true;
+            player.lastHitTime = Date.now();
+            triggerFeedback(type); // This handles sound and approval decrease
+
+            // Start timer to end invulnerability
+            setTimeout(() => {
+                player.isInvulnerable = false;
+            }, player.invulnerabilityDuration);
+        }
+
+
+        // --- Game Logic (Update) ---
+        function update() {
+            if (gameState !== 'playing') return;
+            const now = Date.now(); let currentSpeed = player.speed;
+
+            // Check if invulnerability period has ended
+            if (player.isInvulnerable && now - player.lastHitTime > player.invulnerabilityDuration) {
+                player.isInvulnerable = false;
+            }
+
+            // Player Movement & Direction Tracking (Unchanged)
+            let moveX = 0; let moveY = 0; if (keys['arrowup'] || keys['w']) moveY -= 1; if (keys['arrowdown'] || keys['s']) moveY += 1; if (keys['arrowleft'] || keys['a']) moveX -= 1; if (keys['arrowright'] || keys['d']) moveX += 1;
+            const magnitude = Math.sqrt(moveX * moveX + moveY * moveY);
+            if (magnitude > 0) { const normalizedX = moveX / magnitude; const normalizedY = moveY / magnitude; player.lastMoveDx = normalizedX; player.lastMoveDy = normalizedY; if (player.isDashing) { currentSpeed = player.speed * 3.0; player.x += normalizedX * currentSpeed; player.y += normalizedY * currentSpeed; player.dashParticles.push({ x: player.x + player.width / 2, y: player.y + player.height / 2, life: 20 }); } else { player.x += normalizedX * currentSpeed; player.y += normalizedY * currentSpeed; } }
+            if (keys[' '] && !player.isDashing && now - player.lastDashTime > player.dashCooldown) { player.isDashing = true; player.lastDashTime = now; triggerFeedback('dash'); setTimeout(() => { player.isDashing = false; }, player.dashDuration); }
+            player.dashParticles = player.dashParticles.filter(p => p.life > 0); player.dashParticles.forEach(p => p.life--);
+            player.x = Math.max(0, Math.min(canvasWidth - player.width, player.x)); player.y = Math.max(0, Math.min(canvasHeight - player.height, player.y));
+            particles.forEach((p, index) => { p.x += p.vx; p.y += p.vy; p.life--; if (p.life <= 0) { particles.splice(index, 1); } });
+
+            // Update Each Rival & Check Hazard Hits
+            rivals.forEach(rival => {
+                if (rival.isDestroyed) { /* ... skip destroyed ... */ if (rival.hazardElement && rival.hazardElement.style.opacity !== '0') { rival.hazardElement.style.opacity = '0'; rival.hazardElement.classList.remove('active', 'warning'); } return; }
+                // Rival Movement (Unchanged)
+                rival.x += rival.speed * rival.direction; if (rival.x > rival.startX + rival.patrolRange || rival.x < rival.startX - rival.patrolRange) { rival.direction *= -1; rival.x += rival.speed * rival.direction; } rival.x = Math.max(0, Math.min(canvasWidth - rival.width, rival.x)); rival.y = Math.max(rival.height, Math.min(canvasHeight - rival.height, rival.y));
+                // Hazard Logic (Unchanged)
+                if (!rival.isInWarning && !rival.hazardActive && now - rival.lastHazardTime > rival.hazardCooldown) { rival.isInWarning = true; rival.lastHazardTime = now; playSound('hazardWarn'); if (rival.hazardElement) { rival.hazardElement.style.left = `${rival.x + rival.width / 2 - rivalHazardRadius}px`; rival.hazardElement.style.top = `${rival.y + rival.height / 2 - rivalHazardRadius}px`; rival.hazardElement.classList.add('warning'); rival.hazardElement.style.opacity = 0.8; } setTimeout(() => { if (!rival.isInWarning) return; rival.isInWarning = false; rival.hazardActive = true; rival.hazardFeedbackGiven = false; rival.dodgeFeedbackGiven = false; if (rival.hazardElement) { rival.hazardElement.classList.remove('warning'); rival.hazardElement.classList.add('active'); } setTimeout(() => { if (!rival.hazardActive) return; rival.hazardActive = false; if (rival.hazardElement) { rival.hazardElement.classList.remove('active'); rival.hazardElement.style.opacity = 0; } }, rivalHazardActiveDuration); }, rivalHazardWarningDuration); }
+
+                // --- Check Player Damage from Active Hazard ---
+                if (rival.hazardActive && !player.isInvulnerable) {
+                    const dx = (player.x + player.width / 2) - (rival.x + rival.width / 2);
+                    const dy = (player.y + player.height / 2) - (rival.y + rival.height / 2);
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < rivalHazardRadius + player.width / 2) {
+                        // Apply damage instead of just feedback
+                        applyDamage('hazard_hit');
+                        // No need for hazardFeedbackGiven flag anymore if using invulnerability
+                    }
+                }
+                // Check Player Dodging Active Hazard (Unchanged)
+                 if (player.isDashing && rival.hazardActive) { const dx = (player.x + player.width / 2) - (rival.x + rival.width / 2); const dy = (player.y + player.height / 2) - (rival.y + rival.height / 2); const distance = Math.sqrt(dx * dx + dy * dy); if (distance < rivalHazardRadius + player.width * 1.5 && distance > rivalHazardRadius - player.width) { if (!rival.dodgeFeedbackGiven) { triggerFeedback('dodge'); rival.dodgeFeedbackGiven = true; setTimeout(() => { rival.dodgeFeedbackGiven = false; }, 500); } } }
+            }); // End rival loop
+
+            // --- Check Player Damage from Direct Rival Collision ---
+            if (!player.isInvulnerable) {
+                 rivals.forEach(rival => {
+                     if (!rival.isDestroyed) {
+                         // Simple AABB collision check
+                         if (player.x < rival.x + rival.width &&
+                             player.x + player.width > rival.x &&
+                             player.y < rival.y + rival.height &&
+                             player.y + player.height > rival.y)
+                         {
+                             applyDamage('rival_collision');
+                             // Note: Since we loop, applyDamage's invulnerability
+                             // prevents multiple hits in the same frame.
+                         }
+                     }
+                 });
+            }
+
+
+            // Check halfway point (Unchanged)
+            if (!halfwayReached && player.x > canvasWidth / 2) { halfwayReached = true; triggerFeedback('halfway'); }
+            // Check Collectible Collision (Unchanged)
+            for (let i = collectibles.length - 1; i >= 0; i--) { const collectible = collectibles[i]; if (!collectible.collected) { const dx = (player.x + player.width / 2) - collectible.x; const dy = (player.y + player.height / 2) - collectible.y; const distance = Math.sqrt(dx * dx + dy * dy); if (distance < collectible.radius + player.width / 2) { collectible.collected = true; triggerFeedback('collect'); } } }
+            // Check Level Win Condition (Unchanged)
+            const distToTargetX = player.x + player.width / 2 - targetZone.x; const distToTargetY = player.y + player.height / 2 - targetZone.y; const distanceToTarget = Math.sqrt(distToTargetX * distToTargetX + distToTargetY * distToTargetY);
+            if (distanceToTarget < targetZone.radius + player.width / 2) { if (currentLevel < levelConfigs.length) { gameState = 'level_transition'; if (animationFrameId) cancelAnimationFrame(animationFrameId); playSound('win', 'C5'); levelTransitionOverlay.style.display = 'flex'; kccStatusElement.innerHTML = '🔴<span>OFFLINE</span>'; kccStatusElement.classList.remove('live'); setTimeout(() => { levelTransitionOverlay.style.display = 'none'; currentLevel++; resetGameState(currentLevel - 1); setupGame(currentLevel - 1).then(() => { gameState = 'playing'; kccStatusElement.innerHTML = '🟢<span>LIVE</span>'; kccStatusElement.classList.add('live'); gameLoop(); }); }, 2500); } else { gameState = 'win'; triggerFeedback('win'); winMessage.style.display = 'flex'; kccStatusElement.innerHTML = '🔴<span>OFFLINE</span>'; kccStatusElement.classList.remove('live'); if (animationFrameId) cancelAnimationFrame(animationFrameId); console.log("All levels complete!"); } }
+        }
+
+        // --- Rendering ---
+        function draw() {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            // Draw Background Elements & Grid (Unchanged)
+            ctx.fillStyle = 'rgba(74, 74, 138, 0.1)'; ctx.fillRect(canvasWidth * 0.1, canvasHeight * 0.1, canvasWidth * 0.2, canvasHeight * 0.15); ctx.fillRect(canvasWidth * 0.7, canvasHeight * 0.6, canvasWidth * 0.15, canvasHeight * 0.2); ctx.strokeStyle = 'rgba(74, 74, 138, 0.2)'; ctx.strokeRect(canvasWidth * 0.5, canvasHeight * 0.2, canvasWidth * 0.25, canvasHeight * 0.3);
+            ctx.strokeStyle = 'rgba(74, 74, 138, 0.2)'; ctx.lineWidth = 1; for (let x = 0; x < canvasWidth; x += 50) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvasHeight); ctx.stroke(); } for (let y = 0; y < canvasHeight; y += 50) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvasWidth, y); ctx.stroke(); }
+            // Draw Collectibles (Unchanged)
+            collectibles.forEach(collectible => { if (!collectible.collected) { const packetX = collectible.x - collectibleWidth / 2; const packetY = collectible.y - collectibleHeight / 2; ctx.fillStyle = '#00ffff'; ctx.fillRect(packetX, packetY, collectibleWidth, collectibleHeight); ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(packetX + 2, packetY + 2); ctx.lineTo(packetX + collectibleWidth - 2, packetY + 2); ctx.moveTo(packetX + 2, packetY + collectibleHeight / 2); ctx.lineTo(packetX + collectibleWidth - 2, packetY + collectibleHeight / 2); ctx.moveTo(packetX + 2, packetY + collectibleHeight - 2); ctx.lineTo(packetX + collectibleWidth - 2, packetY + collectibleHeight - 2); ctx.stroke(); ctx.shadowColor = 'rgba(0, 255, 255, 0.5)'; ctx.shadowBlur = 5; ctx.fillStyle = '#00ffff'; ctx.fillRect(packetX, packetY, collectibleWidth, collectibleHeight); ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; } });
+
+            // --- Draw Player (with Invulnerability Flash) ---
+            ctx.save(); // Save current context state
+            if (player.isInvulnerable) {
+                 // Apply flashing effect - CSS animation might be smoother if player was a DOM element
+                 // Simple canvas opacity flash:
+                 ctx.globalAlpha = (Math.floor(Date.now() / 100) % 2 === 0) ? 1.0 : 0.5;
+            }
+            if (player.img) { ctx.drawImage(player.img, player.x, player.y, player.width, player.height); }
+            else { ctx.fillStyle = player.color; ctx.fillRect(player.x, player.y, player.width, player.height); ctx.fillStyle = player.eyeColor; ctx.fillRect(player.x + player.width * 0.6, player.y + player.height * 0.3, 5, 5); }
+            ctx.restore(); // Restore context state (removes alpha change)
+
+
+            // Draw Dash Trail (Unchanged)
+            player.dashParticles.forEach(p => { ctx.beginPath(); const alpha = (p.life / 20) * 0.5; ctx.fillStyle = `rgba(0, 255, 255, ${alpha})`; ctx.arc(p.x, p.y, player.width * 0.3 * (p.life / 20), 0, Math.PI * 2); ctx.fill(); });
+            // Draw Laser Beam (Unchanged)
+            if (player.isFiringLaser) { const laserDx = player.lastMoveDx; const laserDy = player.lastMoveDy; const eyeOffsetX = player.width * 0.22; const eyeOffsetY = -player.height * 0.05; const laserStartX = player.x + player.width / 2 + eyeOffsetX * (laserDx > 0 ? 1 : (laserDx < 0 ? -1 : 1)); const laserStartY = player.y + player.height / 2 + eyeOffsetY; const laserEndX = laserStartX + laserDx * player.laserRange; const laserEndY = laserStartY + laserDy * player.laserRange; ctx.beginPath(); ctx.moveTo(laserStartX, laserStartY); ctx.lineTo(laserEndX, laserEndY); ctx.strokeStyle = 'red'; ctx.lineWidth = player.laserWidth; ctx.shadowColor = 'rgba(255, 0, 0, 0.8)'; ctx.shadowBlur = 10; ctx.stroke(); ctx.beginPath(); ctx.moveTo(laserStartX, laserStartY); ctx.lineTo(laserEndX, laserEndY); ctx.strokeStyle = 'white'; ctx.lineWidth = player.laserWidth * 0.4; ctx.shadowBlur = 0; ctx.stroke(); ctx.shadowColor = 'transparent'; }
+            // Draw Rivals (Unchanged)
+            rivals.forEach(rival => { if (!rival.isDestroyed) { if (rival.img) { ctx.drawImage(rival.img, rival.x, rival.y, rival.width, rival.height); } else { ctx.fillStyle = '#f1c40f'; ctx.fillRect(rival.x, rival.y, rival.width, rival.height); } } });
+            // Draw Disintegration Particles (Unchanged)
+            particles.forEach(p => { const lifeRatio = Math.max(0, p.life / p.initialLife); const colorMatch = p.color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/); let r = 200, g = 200, b = 200, a = 0.8; if (colorMatch) { r = parseInt(colorMatch[1]); g = parseInt(colorMatch[2]); b = parseInt(colorMatch[3]); a = parseFloat(colorMatch[4] || '1'); } const greyVal = 128; const fadeFactor = 1 - lifeRatio; const currentR = Math.round(r * lifeRatio + greyVal * fadeFactor); const currentG = Math.round(g * lifeRatio + greyVal * fadeFactor); const currentB = Math.round(b * lifeRatio + greyVal * fadeFactor); const currentA = a * lifeRatio; ctx.fillStyle = `rgba(${currentR}, ${currentG}, ${currentB}, ${currentA})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius * lifeRatio, 0, Math.PI * 2); ctx.fill(); });
+        }
+
+        // --- Community Feedback ---
+        // Updated triggerFeedback to handle negative messages style
+        function triggerFeedback(eventType) {
+            const messageData = feedbackMessages.find(m => m.trigger === eventType);
+            if (!messageData) return;
+
+            // Update approval meter
+            const currentApproval = parseInt(approvalMeter.value);
+            // Ensure approval doesn't go below 0 (or handle game over)
+            const newApproval = Math.max(0, currentApproval + messageData.approval);
+            approvalMeter.value = newApproval;
+
+            // Display feedback message
+            const msgElement = document.createElement('div');
+            msgElement.className = 'feedback-message';
+            // Add negative class if applicable
+            if (messageData.negative) {
+                msgElement.classList.add('negative');
+            }
+            msgElement.textContent = messageData.text;
+            feedbackArea.appendChild(msgElement);
+            while (feedbackArea.children.length > 5) { feedbackArea.removeChild(feedbackArea.firstChild); }
+            setTimeout(() => {
+                msgElement.classList.add('fade-out');
+                msgElement.addEventListener('transitionend', () => { if (msgElement.parentElement === feedbackArea) { feedbackArea.removeChild(msgElement); } }, { once: true });
+            }, 2000);
+
+            // Play Sound
+            if (messageData.sound) {
+                playSound(messageData.sound, messageData.note || null, '8n');
+            }
+
+             // Check for game over condition (optional)
+             if (newApproval <= 0) {
+                 console.log("Approval reached zero - Game Over (not implemented)");
+                 // gameState = 'gameOver'; // Implement game over state if desired
+             }
+        }
+
+        // --- Game Loop --- (Unchanged)
+        function gameLoop() { if (gameState === 'playing') { update(); draw(); animationFrameId = requestAnimationFrame(gameLoop); } else { console.log("Game loop paused - state:", gameState); } }
+
+        // --- Initial Setup Call --- (Unchanged)
+        window.onload = () => { console.log("Window loaded."); setupGame(currentLevel - 1); };
+
+    </script>
+
+</body>
+</html>
