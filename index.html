@@ -391,9 +391,9 @@
         // Array of rival images
         const rivalImages = [
             { img: new Image(), src: 'doge.png' },
-            { img: new Image(), src: 'shaggy.png' },
+            { img: new Image(), src: 'brettsmall.png' },
             { img: new Image(), src: 'shiba.png' },
-            { img: new Image(), src: 'pepe.png' }
+            { img: new Image(), src: 'brettsmall.png' }
         ];
         // Load all rival images
         rivalImages.forEach(rivalImg => {
@@ -1214,7 +1214,33 @@
             }
             // Collectibles (Unchanged)
             collectibles.forEach(collectible => { if (!collectible.collected) { const packetX = collectible.x - collectibleWidth / 2; const packetY = collectible.y - collectibleHeight / 2; ctx.fillStyle = '#00ffff'; ctx.fillRect(packetX, packetY, collectibleWidth, collectibleHeight); ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(packetX + 2, packetY + 2); ctx.lineTo(packetX + collectibleWidth - 2, packetY + 2); ctx.moveTo(packetX + 2, packetY + collectibleHeight / 2); ctx.lineTo(packetX + collectibleWidth - 2, packetY + collectibleHeight / 2); ctx.moveTo(packetX + 2, packetY + collectibleHeight - 2); ctx.lineTo(packetX + collectibleWidth - 2, packetY + collectibleHeight - 2); ctx.stroke(); ctx.shadowColor = 'rgba(0, 255, 255, 0.5)'; ctx.shadowBlur = 5; ctx.fillStyle = '#00ffff'; ctx.fillRect(packetX, packetY, collectibleWidth, collectibleHeight); ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; } });
-            // Player (Unchanged)
+            // Draw scope sight
+            const scopeLength = 40; // Length of the scope line
+            const scopeOffset = 10; // Distance from player center
+            const playerCenterX = player.x + player.width / 2;
+            const playerCenterY = player.y + player.height / 2;
+            
+            // Calculate scope start and end points
+            const scopeStartX = playerCenterX + player.lastMoveDx * scopeOffset;
+            const scopeStartY = playerCenterY + player.lastMoveDy * scopeOffset;
+            const scopeEndX = playerCenterX + player.lastMoveDx * (scopeOffset + scopeLength);
+            const scopeEndY = playerCenterY + player.lastMoveDy * (scopeOffset + scopeLength);
+            
+            // Draw the scope line
+            ctx.beginPath();
+            ctx.moveTo(scopeStartX, scopeStartY);
+            ctx.lineTo(scopeEndX, scopeEndY);
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw a small dot at the end
+            ctx.beginPath();
+            ctx.arc(scopeEndX, scopeEndY, 3, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+            ctx.fill();
+
+            // Player
             ctx.save(); if (player.isInvulnerable) { ctx.globalAlpha = (Math.floor(Date.now() / 100) % 2 === 0) ? 1.0 : 0.5; }
             ctx.drawImage(player.img, player.x, player.y, player.width, player.height);
             ctx.restore();
