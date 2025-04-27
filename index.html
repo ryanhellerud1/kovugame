@@ -142,8 +142,9 @@
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            background-color: rgba(255, 50, 50, 0.4);
-            border: 2px solid rgba(255, 255, 255, 0.4);
+            background-color: rgba(255, 50, 50, 0.6);
+            border: 3px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 15px rgba(255, 50, 50, 0.3);
             transition: all 0.2s ease;
         }
         #laser-button .laser-button-inner {
@@ -153,14 +154,24 @@
         }
         
         #laser-button.cooldown .laser-button-inner {
-            background-color: rgba(255, 50, 50, 0.2);
-            border-color: rgba(255, 255, 255, 0.3);
+            background-color: rgba(100, 100, 100, 0.3);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+            animation: pulse-cooldown 1.5s infinite;
+        }
+        
+        @keyframes pulse-cooldown {
+            0% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+            100% { opacity: 0.3; }
         }
         
         #laser-button:active .laser-button-inner {
-            background-color: rgba(255, 100, 100, 0.7);
-            border-color: rgba(255, 255, 255, 0.8);
-            transform: scale(0.95);
+            background-color: rgba(255, 100, 100, 0.8);
+            border-color: rgba(255, 255, 255, 1);
+            transform: scale(0.92);
+            box-shadow: 0 0 25px rgba(255, 50, 50, 0.5);
+            transition: all 0.15s ease;
         }
 
         @media (max-width: 768px) {
@@ -368,7 +379,10 @@
 
         // --- Game Objects --- (Unchanged definitions)
         const player = {
-            x: 50, y: 50, width: 84, height: 84, speed: 180, /* Base speed in pixels per second */
+            x: 50, y: 50,
+            width: window.innerWidth <= 768 ? 64 : 84, // Smaller on mobile but still visible
+            height: window.innerWidth <= 768 ? 64 : 84, // Smaller on mobile but still visible
+            speed: window.innerWidth <= 768 ? 200 : 180, /* Slightly faster on mobile for better control */
             isDashing: false, dashCooldown: 1500, lastDashTime: 0, dashDuration: 250, dashParticles: [],
             laserCooldown: 2000, lastLaserTime: 0, isFiringLaser: false, laserDuration: 150, laserRange: 300, laserWidth: 5,
             lastMoveDx: 1, lastMoveDy: 0, isInvulnerable: false, invulnerabilityDuration: 1000, lastHitTime: 0,
@@ -381,7 +395,7 @@
                         console.error("Failed to load player image");
                         resolve();
                     };
-                    this.img.src = 'kovu.png';
+                    this.img.src = 'kovu.PNG';
                 });
             }
         };
@@ -390,13 +404,21 @@
         const rivals = []; const rivalBaseSpeed = 60; /* Base speed in pixels per second */ const rivalHazardRadius = 50; const rivalHazardWarningDuration = 800; const rivalHazardActiveDuration = 1000;
         // Array of rival images
         const rivalImages = [
-            { img: new Image(), src: 'meme1.png' },
-            // { img: new Image(), src: 'meme2.png' },
-            { img: new Image(), src: 'meme3.png' },
-            { img: new Image(), src: 'meme4.png' }
+            { img: new Image(), src: 'meme1.PNG' },
+            { img: new Image(), src: 'meme4.png' },
+            { img: new Image(), src: 'meme3.PNG' },
+            { img: new Image(), src: 'meme4.PNG' }
         ];
-        // Load all rival images
+        // Load all rival images with error handling
         rivalImages.forEach(rivalImg => {
+            rivalImg.img.onload = () => {
+                console.log(`Rival image loaded successfully: ${rivalImg.src}`);
+            };
+            rivalImg.img.onerror = () => {
+                console.error(`Failed to load rival image: ${rivalImg.src}`);
+                // Set a fallback color for failed images
+                rivalImg.loadError = true;
+            };
             rivalImg.img.src = rivalImg.src;
         });
         // Function to get random rival image
@@ -587,8 +609,8 @@
                 rivals.push({
                     x: startX,
                     y: startY,
-                    width: 57,  // Increased by 50% from 38
-                    height: 57, // Increased by 50% from 38
+                    width: window.innerWidth <= 768 ? 42 : 57,  // Smaller on mobile
+                    height: window.innerWidth <= 768 ? 42 : 57, // Smaller on mobile
                     speed: speed,
                     direction: Math.random() < 0.5 ? 1 : -1,
                     patrolRange: patrolRange,
@@ -624,7 +646,59 @@
             joystickDimensionsCalculated = false;
             console.log(`Level ${levelConf.level} setup complete.`);
         }
-        window.addEventListener('resize', () => { if (gameState === 'playing' || gameState === 'level_transition') { setupGame(currentLevel - 1); } });
+        window.addEventListener('resize', () => {
+            // Update dimensions for mobile/desktop
+            if (window.innerWidth <= 768) {
+                player.width = player.height = 64;
+                player.speed = 200;
+                rivals.forEach(rival => {
+                    rival.width = rival.height = 42;
+                });
+            } else {
+                player.width = player.height = 84;
+                player.speed = 180;
+                rivals.forEach(rival => {
+                    rival.width = rival.height = 57;
+                });
+            }
+            
+            // Reload game setup
+            if (gameState === 'playing' || gameState === 'level_transition') {
+                setupGame(currentLevel - 1);
+            }
+        });
+
+        // Function to preload all game images
+        async function preloadGameImages() {
+            console.log("Preloading game images...");
+            const imagePromises = [];
+            
+            // Preload player image
+            imagePromises.push(player.loadImage());
+            
+            // Preload rival images
+            rivalImages.forEach(rivalImg => {
+                imagePromises.push(new Promise((resolve) => {
+                    rivalImg.img.onload = () => {
+                        console.log(`Rival image loaded: ${rivalImg.src}`);
+                        resolve();
+                    };
+                    rivalImg.img.onerror = () => {
+                        console.error(`Failed to load rival image: ${rivalImg.src}`);
+                        resolve(); // Resolve anyway to continue game
+                    };
+                    // Reload the image
+                    rivalImg.img.src = rivalImg.src;
+                }));
+            });
+            
+            try {
+                await Promise.all(imagePromises);
+                console.log("All game images preloaded successfully");
+            } catch (error) {
+                console.error("Error preloading images:", error);
+            }
+        }
         // Enhanced intro panel handling with touch support
         function showIntroPanel(panelNumber) {
             console.log("Transitioning to intro panel:", panelNumber);
@@ -821,8 +895,8 @@
                             let rivalHit = false;
                             for (const rival of rivals) {
                                 if (!rival.isDestroyed) {
-                                    // Add a margin around the rival for easier tapping
-                                    const hitMargin = 30;
+                                    // Add a larger margin around the rival for easier tapping on mobile
+                                    const hitMargin = window.innerWidth <= 768 ? 40 : 30;
                                     const rivalCenterX = rival.x + rival.width/2;
                                     const rivalCenterY = rival.y + rival.height/2;
                                     const dx = gameX - rivalCenterX;
@@ -1241,8 +1315,35 @@
             ctx.fill();
 
             // Player
-            ctx.save(); if (player.isInvulnerable) { ctx.globalAlpha = (Math.floor(Date.now() / 100) % 2 === 0) ? 1.0 : 0.5; }
-            ctx.drawImage(player.img, player.x, player.y, player.width, player.height);
+            ctx.save();
+            try {
+                if (player.isInvulnerable) {
+                    ctx.globalAlpha = (Math.floor(Date.now() / 100) % 2 === 0) ? 1.0 : 0.5;
+                }
+                
+                if (player.img && player.img.complete && player.img.naturalWidth !== 0) {
+                    ctx.drawImage(player.img, player.x, player.y, player.width, player.height);
+                } else {
+                    // Fallback rendering if image isn't loaded
+                    ctx.fillStyle = '#4a90e2';
+                    ctx.fillRect(player.x, player.y, player.width, player.height);
+                    // Add border for visibility
+                    ctx.strokeStyle = '#2980b9';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(player.x, player.y, player.width, player.height);
+                    
+                    // Attempt to reload the image if it failed
+                    if (!player.img || player.img.naturalWidth === 0) {
+                        console.log("Attempting to reload player image...");
+                        player.loadImage();
+                    }
+                }
+            } catch (error) {
+                console.error('Error rendering player:', error);
+                // Emergency fallback
+                ctx.fillStyle = '#4a90e2';
+                ctx.fillRect(player.x, player.y, player.width, player.height);
+            }
             ctx.restore();
             // Optimized dash trail
             if (player.dashParticles.length > 0) {
@@ -1262,9 +1363,44 @@
             // Rivals
             rivals.forEach(rival => {
                 if (!rival.isDestroyed) {
-                    if (rival.img) {
-                        ctx.drawImage(rival.img, rival.x, rival.y, rival.width, rival.height);
-                    } else {
+                    try {
+                        if (rival.img && !rival.img.loadError) {
+                            // Check if image is actually loaded
+                            if (rival.img.complete && rival.img.naturalWidth !== 0) {
+                                // Draw rival image
+                                ctx.drawImage(rival.img, rival.x, rival.y, rival.width, rival.height);
+                                
+                                // Add visual indicator for tappable area on mobile
+                                if (window.innerWidth <= 768) {
+                                    ctx.beginPath();
+                                    ctx.arc(rival.x + rival.width/2, rival.y + rival.height/2,
+                                          rival.width/2 + (window.innerWidth <= 768 ? 40 : 30),
+                                          0, Math.PI * 2);
+                                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                                    ctx.lineWidth = 2;
+                                    ctx.stroke();
+                                }
+                            } else {
+                                // Fallback while image is loading or if load failed
+                                ctx.fillStyle = '#f1c40f';
+                                ctx.fillRect(rival.x, rival.y, rival.width, rival.height);
+                                // Add border for visibility
+                                ctx.strokeStyle = '#e67e22';
+                                ctx.lineWidth = 2;
+                                ctx.strokeRect(rival.x, rival.y, rival.width, rival.height);
+                            }
+                        } else {
+                            // Fallback for missing or error images
+                            ctx.fillStyle = '#f1c40f';
+                            ctx.fillRect(rival.x, rival.y, rival.width, rival.height);
+                            // Add border for visibility
+                            ctx.strokeStyle = '#e67e22';
+                            ctx.lineWidth = 2;
+                            ctx.strokeRect(rival.x, rival.y, rival.width, rival.height);
+                        }
+                    } catch (error) {
+                        console.error('Error rendering rival:', error);
+                        // Emergency fallback
                         ctx.fillStyle = '#f1c40f';
                         ctx.fillRect(rival.x, rival.y, rival.width, rival.height);
                     }
@@ -1332,12 +1468,32 @@
         }
 
         // --- Initial Setup Call ---
-        window.onload = () => {
+        window.onload = async () => {
              console.log("Window loaded.");
-             gameState = 'intro'; // Ensure game starts in intro state
-             setupGame(currentLevel - 1).then(() => {
+             gameState = 'intro';
+             
+             // Show loading state
+             introOverlay.style.display = 'flex';
+             introOverlay.style.opacity = '1';
+             document.getElementById('tutorial-overlay').style.display = 'none';
+             
+             try {
+                 // Preload all images before setup
+                 await preloadGameImages();
+                 console.log("Images preloaded successfully");
+                 
+                 // Initialize game setup after images are loaded
+                 await setupGame(currentLevel - 1);
                  console.log("Initial game setup complete");
-             });
+             } catch (error) {
+                 console.error("Error during game initialization:", error);
+             }
+             
+             // Setup intro and tutorial handlers
+             setupIntroTouchHandlers();
+             setupTutorialHandlers();
+             console.log("Intro and tutorial handlers added.");
+             
              // Add touch listeners after DOM is loaded
              joystickArea.addEventListener('touchstart', (e) => { e.preventDefault(); joystickActive = true; joystickArea.classList.add('active'); const touch = e.changedTouches[0]; joystickStartX = touch.clientX; joystickStartY = touch.clientY; }, { passive: false });
              joystickArea.addEventListener('touchmove', (e) => { e.preventDefault(); if (!joystickActive) return; if (!joystickDimensionsCalculated || maxJoystickDist <= 0) return; const touch = e.changedTouches[0]; const currentX = touch.clientX; const currentY = touch.clientY; const areaRect = joystickArea.getBoundingClientRect(); const areaCenterX = areaRect.left + areaRect.width / 2; const areaCenterY = areaRect.top + areaRect.height / 2; let dx = currentX - areaCenterX; let dy = currentY - areaCenterY; const dist = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxJoystickDist); const knobX = clampedDist * Math.cos(angle); const knobY = clampedDist * Math.sin(angle); joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`; const deadZone = maxJoystickDist * 0.15; if (clampedDist > deadZone) { const magnitude = Math.sqrt(dx * dx + dy * dy); joystickDx = dx / magnitude; joystickDy = dy / magnitude; /* joystickMagnitude removed */ } else { joystickDx = 0; joystickDy = 0; /* joystickMagnitude removed */ } }, { passive: false });
@@ -1467,69 +1623,6 @@
             });
         }
 
-        window.onload = () => {
-            console.log("Window loaded.");
-            gameState = 'intro';
-            
-            // Ensure intro overlay is visible and tutorial is hidden
-            introOverlay.style.display = 'flex';
-            introOverlay.style.opacity = '1';
-            document.getElementById('tutorial-overlay').style.display = 'none';
-            
-            setupGame(currentLevel - 1).then(() => {
-                console.log("Initial game setup complete");
-            });
-            
-            // Add touch listeners after DOM is loaded
-            joystickArea.addEventListener('touchstart', (e) => { e.preventDefault(); joystickActive = true; joystickArea.classList.add('active'); const touch = e.changedTouches[0]; joystickStartX = touch.clientX; joystickStartY = touch.clientY; }, { passive: false });
-            joystickArea.addEventListener('touchmove', (e) => { e.preventDefault(); if (!joystickActive) return; if (!joystickDimensionsCalculated || maxJoystickDist <= 0) return; const touch = e.changedTouches[0]; const currentX = touch.clientX; const currentY = touch.clientY; const areaRect = joystickArea.getBoundingClientRect(); const areaCenterX = areaRect.left + areaRect.width / 2; const areaCenterY = areaRect.top + areaRect.height / 2; let dx = currentX - areaCenterX; let dy = currentY - areaCenterY; const dist = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxJoystickDist); const knobX = clampedDist * Math.cos(angle); const knobY = clampedDist * Math.sin(angle); joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`; const deadZone = maxJoystickDist * 0.15; if (clampedDist > deadZone) { const magnitude = Math.sqrt(dx * dx + dy * dy); joystickDx = dx / magnitude; joystickDy = dy / magnitude; } else { joystickDx = 0; joystickDy = 0; } }, { passive: false });
-            joystickArea.addEventListener('touchend', (e) => { e.preventDefault(); if (!joystickActive) return; joystickActive = false; joystickArea.classList.remove('active'); joystickKnob.style.transform = `translate(-50%, -50%)`; joystickDx = 0; joystickDy = 0; }, { passive: false });
-            
-            // Add game area tap handler
-            gameContainer.addEventListener('touchstart', handleGameAreaTap, { passive: false });
-            console.log("Game area tap handler added.");
-            
-            // Add laser button handler
-            const laserButton = document.getElementById('laser-button');
-            laserButton.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                if (gameState === 'playing' && !player.isFiringLaser && Date.now() - player.lastLaserTime > player.laserCooldown) {
-                    fireLaser();
-                }
-            }, { passive: false });
-            console.log("Laser button handler added.");
-            
-            // Setup intro and tutorial handlers
-            setupIntroTouchHandlers();
-            setupTutorialHandlers();
-            console.log("Intro and tutorial handlers added.");
-
-            // Add restart button handler
-            const restartButton = document.getElementById('restart-button');
-            if (restartButton) {
-                const handleRestart = (e) => {
-                    e.preventDefault();
-                    startGame();
-                };
-                
-                restartButton.addEventListener('touchstart', handleRestart, { passive: false });
-                restartButton.addEventListener('click', handleRestart);
-                console.log("Restart button handlers added.");
-            }
-
-            // Add play again button handler
-            const playAgainButton = document.getElementById('play-again-button');
-            if (playAgainButton) {
-                const handlePlayAgain = (e) => {
-                    e.preventDefault();
-                    restartGame();
-                };
-                
-                playAgainButton.addEventListener('touchstart', handlePlayAgain, { passive: false });
-                playAgainButton.addEventListener('click', handlePlayAgain);
-                console.log("Play again button handlers added.");
-            }
-        };
 
     </script>
 
