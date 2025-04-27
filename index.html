@@ -366,36 +366,45 @@
                 // Create a single transport for all sounds
                 Tone.Transport.start();
                 
+                // Initialize synths with mobile-friendly settings
                 synths.dash = new Tone.Synth({ 
                     oscillator: { type: 'triangle' }, 
-                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 } 
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 },
+                    volume: -8 // Reduced volume for mobile
                 }).toDestination(); 
                 
                 synths.collect = new Tone.Synth({ 
                     oscillator: { type: 'sine' }, 
-                    envelope: { attack: 0.005, decay: 0.1, sustain: 0.05, release: 0.2 } 
+                    envelope: { attack: 0.005, decay: 0.1, sustain: 0.05, release: 0.2 },
+                    volume: -6
                 }).toDestination(); 
                 
                 synths.win = new Tone.Synth({ 
                     oscillator: { type: 'sawtooth' }, 
-                    envelope: { attack: 0.05, decay: 0.2, sustain: 0.3, release: 0.5 } 
+                    envelope: { attack: 0.05, decay: 0.2, sustain: 0.3, release: 0.5 },
+                    volume: -4
                 }).toDestination(); 
                 
-                synths.feedbackPositive = new Tone.PluckSynth().toDestination(); 
+                synths.feedbackPositive = new Tone.PluckSynth({
+                    volume: -8
+                }).toDestination(); 
                 
                 synths.feedbackNegative = new Tone.NoiseSynth({ 
                     noise: { type: 'pink' }, 
-                    envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 } 
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 },
+                    volume: -12
                 }).toDestination(); 
                 
                 synths.hazardWarn = new Tone.Synth({ 
                     oscillator: { type: 'pulse', width: 0.3 }, 
-                    envelope: { attack: 0.01, decay: 0.05, sustain: 0.1, release: 0.1 } 
+                    envelope: { attack: 0.01, decay: 0.05, sustain: 0.1, release: 0.1 },
+                    volume: -10
                 }).toDestination(); 
                 
                 synths.laserFire = new Tone.Synth({ 
                     oscillator: { type: 'pwm', modulationFrequency: 0.2 }, 
-                    envelope: { attack: 0.005, decay: 0.2, sustain: 0.01, release: 0.1 } 
+                    envelope: { attack: 0.005, decay: 0.2, sustain: 0.01, release: 0.1 },
+                    volume: -6
                 }).toDestination(); 
                 
                 synths.rivalDestroyed = new Tone.MetalSynth({ 
@@ -404,23 +413,27 @@
                     harmonicity: 5.1, 
                     modulationIndex: 32, 
                     resonance: 4000, 
-                    octaves: 1.5 
+                    octaves: 1.5,
+                    volume: -8
                 }).toDestination(); 
                 
                 synths.playerHit = new Tone.Synth({ 
                     oscillator: { type: 'square' }, 
-                    envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.2 } 
+                    envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.2 },
+                    volume: -10
                 }).toDestination(); 
                 
                 synths.gameOver = new Tone.Synth({ 
                     oscillator: { type: 'fatsawtooth', count: 3, spread: 30 }, 
-                    envelope: { attack: 0.1, decay: 0.5, sustain: 0.1, release: 0.8 } 
+                    envelope: { attack: 0.1, decay: 0.5, sustain: 0.1, release: 0.8 },
+                    volume: -6
                 }).toDestination(); 
                 
                 soundsReady = true; 
                 console.log("Tone.js Synths Initialized"); 
             } catch (error) { 
                 console.error("Error initializing Tone.js:", error); 
+                soundsReady = false;
             } 
         }
 
@@ -967,7 +980,40 @@
                 button.addEventListener('click', debouncedHandler);
             });
         }
-        function startGame() { /* ... Unchanged ... */ console.log("startGame function called"); currentLevel = 1; if (Tone.context.state !== 'running') { Tone.start().then(() => { console.log("AudioContext started!"); setupSounds(); proceedWithGameStart(); }).catch(e => { console.error("Tone.start() failed:", e); proceedWithGameStart(); }); } else { if (!soundsReady) setupSounds(); proceedWithGameStart(); } }
+        function startGame() { 
+            console.log("startGame function called"); 
+            currentLevel = 1; 
+            
+            // Handle audio context initialization with better mobile support
+            if (Tone.context.state !== 'running') {
+                // Create a temporary button to handle mobile audio context
+                const audioButton = document.createElement('button');
+                audioButton.style.position = 'absolute';
+                audioButton.style.opacity = '0';
+                audioButton.style.pointerEvents = 'none';
+                document.body.appendChild(audioButton);
+                
+                // Try to start audio context
+                audioButton.addEventListener('click', () => {
+                    Tone.start().then(() => {
+                        console.log("AudioContext started!");
+                        setupSounds();
+                        proceedWithGameStart();
+                        document.body.removeChild(audioButton);
+                    }).catch(e => {
+                        console.error("Tone.start() failed:", e);
+                        proceedWithGameStart();
+                        document.body.removeChild(audioButton);
+                    });
+                });
+                
+                // Programmatically click the button
+                audioButton.click();
+            } else {
+                if (!soundsReady) setupSounds();
+                proceedWithGameStart();
+            }
+        }
         function proceedWithGameStart() {
             console.log("Proceeding with game start...");
             
