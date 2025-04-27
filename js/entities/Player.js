@@ -64,17 +64,17 @@ export class Player {
         // Spawn new particles during dash
         if (this.isDashing) {
             this.particleSpawnTimer += deltaTime;
-            if (this.particleSpawnTimer >= 0.02) { // Spawn every 20ms during dash
+            if (this.particleSpawnTimer >= 0.015) { // Spawn more frequently (every 15ms)
                 this.particleSpawnTimer = 0;
-                const spread = 10;
+                const spread = 8; // Tighter spread
                 const offsetX = (Math.random() - 0.5) * spread;
                 const offsetY = (Math.random() - 0.5) * spread;
                 this.dashParticles.push({
                     x: this.x + this.width / 2 + offsetX,
                     y: this.y + this.height / 2 + offsetY,
-                    vx: -this.lastMoveDx * 2 + (Math.random() - 0.5) * 2,
-                    vy: -this.lastMoveDy * 2 + (Math.random() - 0.5) * 2,
-                    life: 30 + Math.random() * 20
+                    vx: -this.lastMoveDx * 2.5 + (Math.random() - 0.5) * 1.5, // Faster particles with less randomness
+                    vy: -this.lastMoveDy * 2.5 + (Math.random() - 0.5) * 1.5,
+                    life: 30 + Math.random() * 15 // Longer life
                 });
             }
         }
@@ -92,20 +92,20 @@ export class Player {
             this.lastDashTime = now;
             this.particleSpawnTimer = 0;
             
-            // Create initial burst of particles in the direction of movement
-            const burstCount = 8;
+            // Create smaller initial burst of particles in the direction of movement
+            const burstCount = 5; // Reduced burst count
             for (let i = 0; i < burstCount; i++) {
                 const angle = (i / burstCount) * Math.PI * 2;
-                const speed = 2 + Math.random() * 2;
-                const baseVx = this.lastMoveDx !== 0 ? -this.lastMoveDx * 3 : Math.cos(angle) * speed;
-                const baseVy = this.lastMoveDy !== 0 ? -this.lastMoveDy * 3 : Math.sin(angle) * speed;
+                const speed = 1.5 + Math.random() * 1.5; // Reduced initial speed
+                const baseVx = this.lastMoveDx !== 0 ? -this.lastMoveDx * 2 : Math.cos(angle) * speed;
+                const baseVy = this.lastMoveDy !== 0 ? -this.lastMoveDy * 2 : Math.sin(angle) * speed;
                 
                 this.dashParticles.push({
                     x: this.x + this.width / 2,
                     y: this.y + this.height / 2,
-                    vx: baseVx + (Math.random() - 0.5) * 2,
-                    vy: baseVy + (Math.random() - 0.5) * 2,
-                    life: 40 + Math.random() * 20
+                    vx: baseVx + (Math.random() - 0.5) * 1.5,
+                    vy: baseVy + (Math.random() - 0.5) * 1.5,
+                    life: 20 + Math.random() * 10 // Shorter life for burst particles
                 });
             }
             
@@ -155,23 +155,23 @@ export class Player {
         // Draw dash particles with glow effect
         ctx.save();
         this.dashParticles.forEach(p => {
-            const lifeRatio = p.life / 40;
-            const alpha = lifeRatio * 0.7;
-            const size = Math.max(0, this.width * 0.3 * lifeRatio);
+            const lifeRatio = p.life / 45;
+            const alpha = lifeRatio * 0.85; // Increased base opacity
+            const size = Math.max(0, this.width * 0.2 * lifeRatio); // Increased base size
             
-            // Draw glow
+            // Draw outer glow
             ctx.beginPath();
-            ctx.shadowColor = 'rgba(0, 255, 255, 0.5)';
-            ctx.shadowBlur = 15;
-            ctx.fillStyle = `rgba(0, 255, 255, ${alpha * 0.5})`;
-            ctx.arc(p.x, p.y, size * 1.5, 0, Math.PI * 2);
+            ctx.shadowColor = 'rgba(0, 255, 255, 0.6)'; // Brighter glow
+            ctx.shadowBlur = 15; // Increased blur
+            ctx.fillStyle = `rgba(0, 255, 255, ${alpha * 0.5})`; // Brighter color
+            ctx.arc(p.x, p.y, size * 1.4, 0, Math.PI * 2); // Larger glow radius
             ctx.fill();
             
             // Draw core
             ctx.beginPath();
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-            ctx.arc(p.x, p.y, size * 0.7, 0, Math.PI * 2);
+            ctx.shadowBlur = 5; // Add slight blur to core
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 1.2})`; // Brighter core
+            ctx.arc(p.x, p.y, size * 0.6, 0, Math.PI * 2); // Slightly larger core
             ctx.fill();
         });
         ctx.restore();

@@ -3,7 +3,7 @@ export class ParticleSystem {
         this.particles = [];
     }
 
-    createExplosion(x, y, color = '#FFD700', count = 20) {
+    createExplosion(x, y, color = '#FFD700', count = 6) {
         for (let i = 0; i < count; i++) {
             this.particles.push(new Particle(x, y, color));
         }
@@ -30,11 +30,11 @@ class Particle {
         this.x = x;
         this.y = y;
         this.color = color;
-        this.size = Math.random() * 4 + 2;
-        this.speedX = (Math.random() - 0.5) * 8;
-        this.speedY = (Math.random() - 0.5) * 8;
+        this.size = Math.random() * 1.5 + 0.5; // Even smaller size range (0.5-2)
+        this.speedX = (Math.random() - 0.5) * 3; // Further reduced speed range
+        this.speedY = (Math.random() - 0.5) * 3; // Further reduced speed range
         this.life = 1.0; // Life from 1 to 0
-        this.decay = Math.random() * 0.2 + 0.3; // Random decay rate
+        this.decay = Math.random() * 0.4 + 0.5; // Faster decay for even shorter duration
     }
 
     update(deltaTime) {
