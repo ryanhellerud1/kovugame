@@ -409,6 +409,12 @@
         // Initial image load
         player.loadImage();
         const rivals = []; const rivalBaseSpeed = 60; /* Base speed in pixels per second */ const rivalHazardRadius = 50; const rivalHazardWarningDuration = 800; const rivalHazardActiveDuration = 1000;
+        // Add FUD projectile system
+        const fudProjectiles = [];
+        const fudProjectileSpeed = 100; // pixels per second
+        const fudProjectileSize = 20;
+        const fudProjectileDamage = 10; // 10% damage
+
         // Array of rival images
         const rivalImages = [
             { img: new Image(), src: 'meme1.PNG' },
@@ -435,7 +441,7 @@
         const targetZone = { x: 600, y: 400, radius: 40, color: 'rgba(0, 255, 0, 0.3)', borderColor: '#00ff00', element: null };
         const collectibles = []; const collectibleRadius = 10; const collectibleWidth = 15; const collectibleHeight = 10;
         const particles = [];
-        const feedbackMessages = [ /* ... Unchanged ... */ { trigger: 'dash', text: '#KovuBoost!', approval: 3, sound: 'dash' }, { trigger: 'halfway', text: 'Looking good! #Progress', approval: 5, sound: 'feedbackPositive', note: 'G4' }, { trigger: 'dodge', text: 'Nice dodge! #Skillz', approval: 4, sound: 'feedbackPositive', note: 'A4' }, { trigger: 'hazard_hit', text: 'Hazard Hit! Approval Lost!', approval: -15, sound: 'playerHit', negative: true }, { trigger: 'rival_collision', text: 'Collision! Ouch!', approval: -10, sound: 'playerHit', negative: true }, { trigger: 'collect', text: 'Data Packet! +Approval!', approval: 5, sound: 'collect', note: 'C5' }, { trigger: 'destroy_rival', text: 'Rival Deleted! #LaserFocus', approval: 10, sound: 'rivalDestroyed' }, { trigger: 'win', text: '#Victory! Community Morale Soaring!', approval: 20, sound: 'win', note: 'C5' } ];
+        const feedbackMessages = [ /* ... Unchanged ... */ { trigger: 'dash', text: '#KovuBoost!', approval: 3, sound: 'dash' }, { trigger: 'halfway', text: 'Looking good! #Progress', approval: 5, sound: 'feedbackPositive', note: 'G4' }, { trigger: 'dodge', text: 'Nice dodge! #Skillz', approval: 4, sound: 'feedbackPositive', note: 'A4' }, { trigger: 'hazard_hit', text: 'Hazard Hit! Approval Lost!', approval: -15, sound: 'playerHit', negative: true }, { trigger: 'rival_collision', text: 'Collision! Ouch!', approval: -10, sound: 'playerHit', negative: true }, { trigger: 'collect', text: 'Data Packet! +Approval!', approval: 5, sound: 'collect', note: 'C5' }, { trigger: 'destroy_rival', text: 'Rival Deleted! #LaserFocus', approval: 10, sound: 'rivalDestroyed' }, { trigger: 'win', text: '#Victory! Community Morale Soaring!', approval: 20, sound: 'win', note: 'C5' }, { trigger: 'fud_hit', text: 'FUD Attack! -10% Approval!', approval: -10, sound: 'playerHit', negative: true } ];
         let halfwayReached = false;
 
         // --- Initialization --- (Unchanged functions: loadSvg, createDisintegrationEffect)
@@ -633,7 +639,8 @@
                     hazardCooldown: hazardCooldown,
                     hazardTimer: hazardCooldown + hazardRandomDelay + 2000, // Reduced initial delay to 2 seconds
                     hazardTargetX: 0,
-                    hazardTargetY: 0
+                    hazardTargetY: 0,
+                    lastFudShot: 0, // Add FUD shooting timer
                 });
             }
             updateObjectiveText(); // Initialize enemy count display
@@ -1166,6 +1173,12 @@
                 // Hazard Collision Checks (Unchanged)
                 if (rival.hazardActive && !player.isInvulnerable) { const dx = (player.x + player.width / 2) - rival.hazardTargetX; const dy = (player.y + player.height / 2) - rival.hazardTargetY; const distance = Math.sqrt(dx * dx + dy * dy); if (distance < rivalHazardRadius + player.width / 2) { applyDamage('hazard_hit'); } }
                 if (player.isDashing && rival.hazardActive) { const dx = (player.x + player.width / 2) - rival.hazardTargetX; const dy = (player.y + player.height / 2) - rival.hazardTargetY; const distance = Math.sqrt(dx * dx + dy * dy); if (distance < rivalHazardRadius + player.width * 1.5 && distance > rivalHazardRadius - player.width) { if (!rival.dodgeFeedbackGiven) { triggerFeedback('dodge'); rival.dodgeFeedbackGiven = true; setTimeout(() => { rival.dodgeFeedbackGiven = false; }, 500); } } }
+
+                // Add FUD shooting logic
+                if (!rival.lastFudShot || now - rival.lastFudShot > (5000 + Math.random() * 5000)) {
+                    shootFud(rival);
+                    rival.lastFudShot = now;
+                }
             });
 
             // Check Player Damage from Direct Rival Collision with circular hitboxes
@@ -1262,6 +1275,9 @@
                     }
                 }
             }
+
+            // Update FUD projectiles
+            updateFudProjectiles(deltaTime);
         }
 
         // --- Rendering ---
@@ -1437,6 +1453,9 @@
                 });
                 ctx.restore();
             }
+
+            // Draw FUD projectiles
+            drawFudProjectiles();
         }
 
         // --- Community Feedback --- (Unchanged)
@@ -1641,6 +1660,98 @@
             });
         }
 
+        // Add FUD projectile rendering function
+        function drawFudProjectiles() {
+            ctx.save();
+            fudProjectiles.forEach(projectile => {
+                // Draw FUD text
+                ctx.font = 'bold 12px "Press Start 2P"';
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('FUD', projectile.x, projectile.y);
+                
+                // Add glow effect
+                ctx.shadowColor = 'rgba(255, 0, 0, 0.5)';
+                ctx.shadowBlur = 10;
+                ctx.fillText('FUD', projectile.x, projectile.y);
+                ctx.shadowBlur = 0;
+            });
+            ctx.restore();
+        }
+
+        // Add FUD projectile update function
+        function updateFudProjectiles(deltaTime) {
+            for (let i = fudProjectiles.length - 1; i >= 0; i--) {
+                const projectile = fudProjectiles[i];
+                
+                // Update position
+                projectile.x += projectile.vx * deltaTime;
+                projectile.y += projectile.vy * deltaTime;
+                
+                // Check if projectile is out of bounds
+                if (projectile.x < 0 || projectile.x > canvasWidth || 
+                    projectile.y < 0 || projectile.y > canvasHeight) {
+                    fudProjectiles.splice(i, 1);
+                    continue;
+                }
+                
+                // Check collision with player
+                if (!player.isInvulnerable) {
+                    const dx = (player.x + player.width / 2) - projectile.x;
+                    const dy = (player.y + player.height / 2) - projectile.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < player.width / 2 + fudProjectileSize / 2) {
+                        // Apply damage
+                        const currentApproval = parseInt(approvalMeter.value);
+                        const newApproval = Math.max(0, currentApproval - fudProjectileDamage);
+                        approvalMeter.value = newApproval;
+                        
+                        // Trigger feedback
+                        triggerFeedback('fud_hit');
+                        
+                        // Remove projectile
+                        fudProjectiles.splice(i, 1);
+                        
+                        // Check for game over
+                        if (newApproval <= 0 && gameState !== 'gameOver') {
+                            triggerGameOver();
+                        }
+                    }
+                }
+            }
+        }
+
+        // Add FUD shooting function
+        function shootFud(rival) {
+            if (rival.isDestroyed) return;
+            
+            const playerCenterX = player.x + player.width / 2;
+            const playerCenterY = player.y + player.height / 2;
+            const rivalCenterX = rival.x + rival.width / 2;
+            const rivalCenterY = rival.y + rival.height / 2;
+            
+            // Calculate direction to player
+            const dx = playerCenterX - rivalCenterX;
+            const dy = playerCenterY - rivalCenterY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // Normalize direction
+            const vx = (dx / distance) * fudProjectileSpeed;
+            const vy = (dy / distance) * fudProjectileSpeed;
+            
+            // Create projectile
+            fudProjectiles.push({
+                x: rivalCenterX,
+                y: rivalCenterY,
+                vx: vx,
+                vy: vy
+            });
+            
+            // Play sound
+            playSound('laserFire');
+        }
 
     </script>
 
