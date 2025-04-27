@@ -90,6 +90,25 @@
         .target-zone { position: absolute; border: 3px dashed #00ff00; border-radius: 50%; box-shadow: 0 0 15px rgba(0, 255, 0, 0.6); opacity: 0; pointer-events: none; transition: opacity 0.5s ease; z-index: 5; }
         .target-zone.active { opacity: 1; pointer-events: auto; }
 
+        /* Mobile Tutorial Overlay */
+        #mobile-tutorial {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            z-index: 70;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
         /* Hazard Styling (Unchanged) */
         .dogen-hazard { position: absolute; border-radius: 50%; background-color: transparent; pointer-events: none; z-index: 5; opacity: 0; transform: scale(0.9); border: 3px solid transparent; box-shadow: 0 0 0px transparent; transition: opacity 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease; }
         .dogen-hazard.warning { opacity: 0.8; border-color: #ffd700; transform: scale(0.95); animation: pulse-warning 0.7s infinite alternate; }
@@ -228,6 +247,8 @@
             </div>
             <div id="feedback-area"></div>
             <div id="win-message"> <h2>All Levels Complete!</h2> <p>#KovuWins! The Community is ecstatic!</p> <button id="play-again-button">Play Again?</button> </div>
+
+            <div id="mobile-tutorial">Tap on screen to dash</div>
 
              <div id="touch-controls-container">
                   <div id="joystick-area">
@@ -505,6 +526,21 @@
             
             // Set game state to playing before setup to ensure rivals are active
             gameState = 'playing';
+            
+            // Show mobile tutorial if on mobile
+            if (window.innerWidth <= 768) {
+                const mobileTutorial = document.getElementById('mobile-tutorial');
+                mobileTutorial.style.display = 'block';
+                setTimeout(() => {
+                    mobileTutorial.style.opacity = '1';
+                    setTimeout(() => {
+                        mobileTutorial.style.opacity = '0';
+                        setTimeout(() => {
+                            mobileTutorial.style.display = 'none';
+                        }, 300);
+                    }, 1500);
+                }, 100);
+            }
             
             // Setup the game
             setupGame(currentLevel - 1).then(() => {
