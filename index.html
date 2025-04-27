@@ -346,15 +346,25 @@
         function setupSounds() { try { synths.dash = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 } }).toDestination(); synths.collect = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.05, release: 0.2 } }).toDestination(); synths.win = new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.05, decay: 0.2, sustain: 0.3, release: 0.5 } }).toDestination(); synths.feedbackPositive = new Tone.PluckSynth().toDestination(); synths.feedbackNegative = new Tone.NoiseSynth({ noise: { type: 'pink' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination(); synths.hazardWarn = new Tone.Synth({ oscillator: { type: 'pulse', width: 0.3 }, envelope: { attack: 0.01, decay: 0.05, sustain: 0.1, release: 0.1 } }).toDestination(); synths.laserFire = new Tone.Synth({ oscillator: { type: 'pwm', modulationFrequency: 0.2 }, envelope: { attack: 0.005, decay: 0.2, sustain: 0.01, release: 0.1 } }).toDestination(); synths.rivalDestroyed = new Tone.MetalSynth({ frequency: 100, envelope: { attack: 0.01, decay: 0.4, release: 0.2 }, harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5 }).toDestination(); synths.playerHit = new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.2 } }).toDestination(); synths.gameOver = new Tone.Synth({ oscillator: { type: 'fatsawtooth', count: 3, spread: 30 }, envelope: { attack: 0.1, decay: 0.5, sustain: 0.1, release: 0.8 } }).toDestination(); soundsReady = true; console.log("Tone.js Synths Initialized"); } catch (error) { console.error("Error initializing Tone.js:", error); } }
         function playSound(type, note = null, duration = '8n') { if (!soundsReady || !synths[type]) return; try { if (type === 'feedbackNegative' || type === 'dash' || type === 'hazardWarn' || type === 'laserFire' || type === 'rivalDestroyed' || type === 'playerHit' || type === 'gameOver') { if (type === 'feedbackNegative') synths[type].triggerAttackRelease(duration); else if (type === 'dash') synths[type].triggerAttackRelease('C4', duration); else if (type === 'hazardWarn') synths[type].triggerAttackRelease('A4', '16n'); else if (type === 'laserFire') synths[type].triggerAttackRelease('G5', '16n'); else if (type === 'rivalDestroyed') synths[type].triggerAttackRelease(); else if (type === 'playerHit') synths[type].triggerAttackRelease('C3', '8n'); else if (type === 'gameOver') synths[type].triggerAttackRelease('C2', '1n'); } else if (note) { synths[type].triggerAttackRelease(note, duration); } } catch (error) { console.error(`Error playing sound ${type}:`, error); } }
 
-        // Background image
+        // Background images
         let backgroundImage = new Image();
+        let backgroundImage2 = new Image();
+        
         backgroundImage.onload = () => {
-            console.log("Background image loaded successfully");
+            console.log("Background image 1 loaded successfully");
         };
         backgroundImage.onerror = () => {
-            console.error("Failed to load background image");
+            console.error("Failed to load background image 1");
         };
+        backgroundImage2.onload = () => {
+            console.log("Background image 2 loaded successfully");
+        };
+        backgroundImage2.onerror = () => {
+            console.error("Failed to load background image 2");
+        };
+        
         backgroundImage.src = 'bg.jpg';
+        backgroundImage2.src = 'bg2.jpg';
 
         // --- Game Objects --- (Unchanged definitions)
         const player = {
@@ -1178,8 +1188,9 @@
         function draw() {
             ctx.clearRect(0, 0, canvasWidth, canvasHeight);
             
-            // Draw background image
-            ctx.drawImage(backgroundImage, 0, 0, canvasWidth, canvasHeight);
+            // Draw background image based on level
+            const currentBg = (currentLevel === 2 || currentLevel === 4) ? backgroundImage2 : backgroundImage;
+            ctx.drawImage(currentBg, 0, 0, canvasWidth, canvasHeight);
             
             // Background elements & grid with increased opacity for visibility
             ctx.fillStyle = 'rgba(74, 74, 138, 0.25)';
