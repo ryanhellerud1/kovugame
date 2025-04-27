@@ -216,7 +216,7 @@
                  </div>
             </div>
             <div id="level-transition-overlay"><h2>Level Complete!</h2><p>Prepare for the next challenge...</p></div>
-            <div id="game-over-overlay"><h2>Game Over!</h2><p>Community approval dropped too low. Try again?</p><button onclick="startGame()">Restart</button></div>
+            <div id="game-over-overlay"><h2>Game Over!</h2><p>Community approval dropped too low. Try again?</p><button id="restart-button">Restart</button></div>
             <canvas id="gameCanvas"></canvas>
             <div id="ui-container">
                  <div id="ui-left"> <div id="kcc-status">🔴<span>OFFLINE</span></div>
@@ -227,7 +227,7 @@
                  </div>
             </div>
             <div id="feedback-area"></div>
-            <div id="win-message"> <h2>All Levels Complete!</h2> <p>#KovuWins! The Community is ecstatic!</p> <button onclick="restartGame()">Play Again?</button> </div>
+            <div id="win-message"> <h2>All Levels Complete!</h2> <p>#KovuWins! The Community is ecstatic!</p> <button id="play-again-button">Play Again?</button> </div>
 
              <div id="touch-controls-container">
                   <div id="joystick-area">
@@ -967,6 +967,32 @@
              // Setup intro touch handlers
              setupIntroTouchHandlers();
              console.log("Intro touch handlers added.");
+
+             // Add restart button handler with both touch and click support
+             const restartButton = document.getElementById('restart-button');
+             if (restartButton) {
+                 const handleRestart = (e) => {
+                     e.preventDefault();
+                     startGame();
+                 };
+                 
+                 restartButton.addEventListener('touchstart', handleRestart, { passive: false });
+                 restartButton.addEventListener('click', handleRestart);
+                 console.log("Restart button handlers added.");
+             }
+
+             // Add play again button handler
+             const playAgainButton = document.getElementById('play-again-button');
+             if (playAgainButton) {
+                 const handlePlayAgain = (e) => {
+                     e.preventDefault();
+                     restartGame();
+                 };
+                 
+                 playAgainButton.addEventListener('touchstart', handlePlayAgain, { passive: false });
+                 playAgainButton.addEventListener('click', handlePlayAgain);
+                 console.log("Play again button handlers added.");
+             }
         };
 
     </script>
