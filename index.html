@@ -108,6 +108,31 @@
 
         /* --- Mobile Overrides --- */
         /* Simplified media query for general mobile */
+        /* Laser Button Styles */
+        #laser-button {
+            width: 90px; /* Slightly smaller than joystick */
+            height: 90px;
+            position: relative;
+            pointer-events: auto;
+            border-radius: 50%;
+            background: none;
+            margin-right: 10px;
+        }
+        .laser-button-inner {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: rgba(255, 50, 50, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            transition: all 0.2s ease;
+        }
+        #laser-button:active .laser-button-inner {
+            background-color: rgba(255, 100, 100, 0.7);
+            border-color: rgba(255, 255, 255, 0.8);
+            transform: scale(0.95);
+        }
+
         @media (max-width: 768px) {
             #game-wrapper {
                  max-height: none; /* Allow full height */
@@ -194,12 +219,14 @@
             <div id="win-message"> <h2>All Levels Complete!</h2> <p>#KovuWins! The Community is ecstatic!</p> <button onclick="restartGame()">Play Again?</button> </div>
 
              <div id="touch-controls-container">
-                 <div id="joystick-area">
-                     <div id="joystick-base"></div>
-                     <div id="joystick-knob"></div>
-                 </div>
-                 <!-- Action buttons removed in favor of tap gestures -->
-             </div>
+                  <div id="joystick-area">
+                      <div id="joystick-base"></div>
+                      <div id="joystick-knob"></div>
+                  </div>
+                  <div id="laser-button">
+                      <div class="laser-button-inner"></div>
+                  </div>
+              </div>
         </div>
         <div id="controls-hint">Controls: Arrow Keys/WASD/Joystick, Space/Touch to Dash, E/Touch to Fire Laser</div>
     </div>
@@ -840,6 +867,16 @@
              // Add game area tap handler
              gameContainer.addEventListener('touchstart', handleGameAreaTap, { passive: false });
              console.log("Game area tap handler added.");
+             
+             // Add laser button handler
+             const laserButton = document.getElementById('laser-button');
+             laserButton.addEventListener('touchstart', (e) => {
+                 e.preventDefault();
+                 if (gameState === 'playing' && !player.isFiringLaser && Date.now() - player.lastLaserTime > player.laserCooldown) {
+                     fireLaser();
+                 }
+             }, { passive: false });
+             console.log("Laser button handler added.");
              
              // Setup intro touch handlers
              setupIntroTouchHandlers();
