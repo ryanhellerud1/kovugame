@@ -368,7 +368,7 @@
 
         // --- Game Objects --- (Unchanged definitions)
         const player = {
-            x: 50, y: 50, width: 56, height: 56, speed: 180, /* Base speed in pixels per second */
+            x: 50, y: 50, width: 84, height: 84, speed: 180, /* Base speed in pixels per second */
             isDashing: false, dashCooldown: 1500, lastDashTime: 0, dashDuration: 250, dashParticles: [],
             laserCooldown: 2000, lastLaserTime: 0, isFiringLaser: false, laserDuration: 150, laserRange: 300, laserWidth: 5,
             lastMoveDx: 1, lastMoveDy: 0, isInvulnerable: false, invulnerabilityDuration: 1000, lastHitTime: 0,
@@ -381,7 +381,7 @@
                         console.error("Failed to load player image");
                         resolve();
                     };
-                    this.img.src = 'k2.png';
+                    this.img.src = 'kovu.png';
                 });
             }
         };
@@ -390,10 +390,10 @@
         const rivals = []; const rivalBaseSpeed = 60; /* Base speed in pixels per second */ const rivalHazardRadius = 50; const rivalHazardWarningDuration = 800; const rivalHazardActiveDuration = 1000;
         // Array of rival images
         const rivalImages = [
-            { img: new Image(), src: 'doge.png' },
-            { img: new Image(), src: 'brettsmall.png' },
-            { img: new Image(), src: 'shiba.png' },
-            { img: new Image(), src: 'brettsmall.png' }
+            { img: new Image(), src: 'meme1.png' },
+            // { img: new Image(), src: 'meme2.png' },
+            { img: new Image(), src: 'meme3.png' },
+            { img: new Image(), src: 'meme4.png' }
         ];
         // Load all rival images
         rivalImages.forEach(rivalImg => {
@@ -587,8 +587,8 @@
                 rivals.push({
                     x: startX,
                     y: startY,
-                    width: 38,
-                    height: 38,
+                    width: 57,  // Increased by 50% from 38
+                    height: 57, // Increased by 50% from 38
                     speed: speed,
                     direction: Math.random() < 0.5 ? 1 : -1,
                     patrolRange: patrolRange,
