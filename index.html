@@ -975,15 +975,23 @@
                     console.log("Next action:", nextAction);
                     
                     if (nextAction === 'start') {
-                        console.log("Starting tutorial from final story panel");
-                        currentPanel.style.opacity = '0';
-                        setTimeout(() => {
-                            currentPanel.style.display = 'none';
-                            currentPanel.classList.remove('active');
-                            introOverlay.style.display = 'none';
-                            document.getElementById('tutorial-overlay').style.display = 'flex';
-                            showTutorialPanel(1);
-                        }, 300);
+                        console.log("Starting tutorial from final story panel - Initializing Audio...");
+                        // Initialize Audio on user interaction
+                        initializeMobileAudio().then(audioStarted => {
+                            if (audioStarted && !soundsReady) {
+                                console.log("Setting up sounds after intro...");
+                                setupSounds();
+                            }
+                            // Proceed after audio attempt
+                            currentPanel.style.opacity = '0';
+                            setTimeout(() => {
+                                currentPanel.style.display = 'none';
+                                currentPanel.classList.remove('active');
+                                introOverlay.style.display = 'none';
+                                document.getElementById('tutorial-overlay').style.display = 'flex';
+                                showTutorialPanel(1);
+                            }, 300);
+                        });
                     } else {
                         const nextPanelNumber = parseInt(nextAction);
                         if (!isNaN(nextPanelNumber)) {
@@ -1012,27 +1020,17 @@
         function initializeMobileAudio() {
             return new Promise((resolve) => {
                 if (Tone.context.state !== 'running') {
-                    const audioButton = document.createElement('button');
-                    audioButton.style.position = 'absolute';
-                    audioButton.style.opacity = '0';
-                    audioButton.style.pointerEvents = 'none';
-                    document.body.appendChild(audioButton);
-                    
-                    audioButton.addEventListener('click', () => {
-                        Tone.start().then(() => {
-                            console.log("AudioContext started!");
-                            document.body.removeChild(audioButton);
-                            resolve(true);
-                        }).catch(e => {
-                            console.error("Tone.start() failed:", e);
-                            document.body.removeChild(audioButton);
-                            resolve(false);
-                        });
+                    console.log("AudioContext not running, attempting to start...");
+                    Tone.start().then(() => {
+                        console.log("AudioContext started successfully!");
+                        resolve(true);
+                    }).catch(e => {
+                        console.error("Tone.start() failed:", e);
+                        resolve(false); // Resolve false if starting fails
                     });
-                    
-                    audioButton.click();
                 } else {
-                    resolve(true);
+                    console.log("AudioContext already running.");
+                    resolve(true); // Resolve true if already running
                 }
             });
         }
@@ -1040,14 +1038,9 @@
         function startGame() { 
             console.log("startGame function called"); 
             currentLevel = 1; 
-            
-            initializeMobileAudio().then(audioStarted => {
-                if (audioStarted) {
-                    if (!soundsReady) setupSounds();
-                }
-                proceedWithGameStart();
-            });
+            proceedWithGameStart(); // Directly proceed
         }
+
         function proceedWithGameStart() {
             console.log("Proceeding with game start...");
             
@@ -1926,14 +1919,23 @@
                     console.log("Tutorial next action:", nextAction);
                     
                     if (nextAction === 'start') {
-                        currentPanel.style.opacity = '0';
-                        setTimeout(() => {
-                            currentPanel.style.display = 'none';
-                            currentPanel.classList.remove('active');
-                            tutorialActive = false;
-                            document.getElementById('tutorial-overlay').style.display = 'none';
-                            startGame();
-                        }, 300);
+                        console.log("Starting game from tutorial - Initializing Audio...");
+                        // Initialize Audio on user interaction
+                        initializeMobileAudio().then(audioStarted => {
+                            if (audioStarted && !soundsReady) {
+                                console.log("Setting up sounds after tutorial...");
+                                setupSounds();
+                            }
+                            // Proceed after audio attempt
+                            currentPanel.style.opacity = '0';
+                            setTimeout(() => {
+                                currentPanel.style.display = 'none';
+                                currentPanel.classList.remove('active');
+                                tutorialActive = false;
+                                document.getElementById('tutorial-overlay').style.display = 'none';
+                                startGame(); // Start the game
+                            }, 300);
+                        });
                     } else {
                         const nextPanelNumber = parseInt(nextAction);
                         if (!isNaN(nextPanelNumber)) {
