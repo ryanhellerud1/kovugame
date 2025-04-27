@@ -487,17 +487,21 @@
         }
 
         // Background images
-        let backgroundImage = new Image();
-        let backgroundImage2 = new Image();
-        let backgroundImage3 = new Image(); // For level 5
-        let backgroundImage4 = new Image(); // For level 6
+        let backgroundImage = new Image(); // Level 1 - bgcity.jpg
+        let backgroundImage2 = new Image(); // Level 2 - bg2.jpg
+        let backgroundImage3 = new Image(); // Level 3 - memeversebg.jpg
+        let backgroundImage4 = new Image(); // Level 4 - sydney.jpg
+        let backgroundImage5 = new Image(); // Level 5 - whitehousebg.jpg
+        let backgroundImage6 = new Image(); // Level 6 - marsbg.jpg
         
         // Track image loading status
         const imageLoadStatus = {
             bg1: false,
             bg2: false,
             bg3: false,
-            bg4: false
+            bg4: false,
+            bg5: false,
+            bg6: false
         };
         
         // Function to handle image loading with retries
@@ -538,10 +542,12 @@
         async function loadBackgroundImages() {
             try {
                 await Promise.all([
-                    loadImageWithRetry(backgroundImage, 'bg.jpg', 'bg1'),
+                    loadImageWithRetry(backgroundImage, 'bgcity.jpg', 'bg1'),
                     loadImageWithRetry(backgroundImage2, 'bg2.jpg', 'bg2'),
                     loadImageWithRetry(backgroundImage3, 'memeversebg.jpg', 'bg3'),
-                    loadImageWithRetry(backgroundImage4, 'whitehousebg.jpg', 'bg4')
+                    loadImageWithRetry(backgroundImage4, 'sydney.jpg', 'bg4'),
+                    loadImageWithRetry(backgroundImage5, 'whitehousebg.jpg', 'bg5'),
+                    loadImageWithRetry(backgroundImage6, 'marsbg.jpg', 'bg6')
                 ]);
                 console.log("All background images loaded or failed gracefully");
             } catch (error) {
@@ -1501,14 +1507,18 @@
             // Draw background image based on level with improved fallback
             let currentBg;
             try {
-                if (currentLevel === 2 || currentLevel === 4) {
+                if (currentLevel === 1) {
+                    currentBg = imageLoadStatus.bg1 ? backgroundImage : null;
+                } else if (currentLevel === 2) {
                     currentBg = imageLoadStatus.bg2 ? backgroundImage2 : backgroundImage;
+                } else if (currentLevel === 3) {
+                    currentBg = imageLoadStatus.bg3 ? backgroundImage3 : backgroundImage2;
+                } else if (currentLevel === 4) {
+                    currentBg = imageLoadStatus.bg4 ? backgroundImage4 : backgroundImage3;
                 } else if (currentLevel === 5) {
-                    currentBg = imageLoadStatus.bg3 ? backgroundImage3 : (imageLoadStatus.bg2 ? backgroundImage2 : backgroundImage);
+                    currentBg = imageLoadStatus.bg5 ? backgroundImage5 : backgroundImage4;
                 } else if (currentLevel === 6) {
-                    currentBg = imageLoadStatus.bg4 ? backgroundImage4 : (imageLoadStatus.bg2 ? backgroundImage2 : backgroundImage);
-                } else {
-                    currentBg = backgroundImage;
+                    currentBg = imageLoadStatus.bg6 ? backgroundImage6 : backgroundImage5;
                 }
                 
                 // Ensure we have a valid image before drawing
@@ -1517,10 +1527,12 @@
                 } else {
                     console.warn("Background image not ready, using fallback");
                     // Fallback background with level-specific colors
-                    if (currentLevel === 5) {
+                    if (currentLevel === 3) {
                         ctx.fillStyle = '#1a1a2e'; // Dark blue for memeverse
-                    } else if (currentLevel === 6) {
+                    } else if (currentLevel === 5) {
                         ctx.fillStyle = '#2c3e50'; // Darker blue for whitehouse
+                    } else if (currentLevel === 6) {
+                        ctx.fillStyle = '#2c3e50'; // Darker blue for mars
                     } else {
                         ctx.fillStyle = '#1a1a2e'; // Default dark blue
                     }
