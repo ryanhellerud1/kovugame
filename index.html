@@ -608,8 +608,8 @@
                 rivals.push({
                     x: startX,
                     y: startY,
-                    width: window.innerWidth <= 768 ? 85 : 57,  // 50% larger on mobile
-                    height: window.innerWidth <= 768 ? 85 : 57, // 50% larger on mobile
+                    width: window.innerWidth <= 768 ? 68 : 57,  // 20% smaller than previous mobile size
+                    height: window.innerWidth <= 768 ? 68 : 57, // 20% smaller than previous mobile size
                     speed: speed,
                     direction: Math.random() < 0.5 ? 1 : -1,
                     patrolRange: patrolRange,
@@ -651,7 +651,7 @@
                 player.width = player.height = 64;
                 player.speed = 200;
                 rivals.forEach(rival => {
-                    rival.width = rival.height = 85; // 50% larger on mobile
+                    rival.width = rival.height = 68; // 20% smaller than previous mobile size
                 });
             } else {
                 player.width = player.height = 84;
