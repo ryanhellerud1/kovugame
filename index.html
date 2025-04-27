@@ -207,6 +207,14 @@
             #controls-hint { display: none; }
         }
 
+        #tutorial-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; z-index: 100; padding: 20px; border-radius: 10px; transition: opacity 0.5s ease; box-sizing: border-box; }
+        .tutorial-panel { display: none; width: 80%; max-width: 500px; }
+        .tutorial-panel.active { display: block; }
+        .tutorial-panel img { max-width: 100%; height: auto; max-height: 150px; margin-bottom: 10px; border: 2px solid #4a4a8a; border-radius: 8px; }
+        .tutorial-panel p { font-size: 0.7rem; line-height: 1.4; margin-bottom: 15px; }
+        .hazard-demo { position: absolute; width: 100px; height: 100px; border-radius: 50%; background-color: rgba(255, 0, 0, 0.3); border: 3px dashed #ff0000; box-shadow: 0 0 15px rgba(255, 0, 0, 0.6); animation: pulse-hazard 1s infinite alternate; }
+        @keyframes pulse-hazard { from { transform: scale(0.9); opacity: 0.7; } to { transform: scale(1.1); opacity: 1; } }
+
     </style>
 </head>
 <body>
@@ -236,6 +244,29 @@
             </div>
             <div id="level-transition-overlay"><h2>Level Complete!</h2><p>Prepare for the next challenge...</p></div>
             <div id="game-over-overlay"><h2>Game Over!</h2><p>Community approval dropped too low. Try again?</p><button id="restart-button">Restart</button></div>
+            <div id="tutorial-overlay" style="display: none;">
+                <div class="tutorial-panel" id="tutorial-1" data-panel="1">
+                    <h2>Welcome to the Arena!</h2>
+                    <p>Your goal is to collect data packets while avoiding hazards and rivals.</p>
+                    <div class="hazard-demo" style="top: 30%; left: 50%; transform: translate(-50%, -50%);"></div>
+                    <p>Watch out for red hazard zones! They'll drain your approval rating.</p>
+                    <button data-next="2">Next</button>
+                </div>
+                <div class="tutorial-panel" id="tutorial-2" data-panel="2">
+                    <h2>Controls</h2>
+                    <p>Use the joystick or arrow keys to move.</p>
+                    <p>Tap the screen or press SPACE to dash away from danger.</p>
+                    <p>Use the laser button or press E to destroy rivals.</p>
+                    <button data-next="3">Next</button>
+                </div>
+                <div class="tutorial-panel" id="tutorial-3" data-panel="3">
+                    <h2>Gameplay Tips</h2>
+                    <p>Collect all data packets to activate the target zone.</p>
+                    <p>Destroy rivals to clear your path.</p>
+                    <p>Keep your approval rating above zero!</p>
+                    <button data-next="start">Begin!</button>
+                </div>
+            </div>
             <canvas id="gameCanvas"></canvas>
             <div id="ui-container">
                  <div id="ui-left"> <div id="kcc-status">🔴<span>OFFLINE</span></div>
@@ -290,6 +321,7 @@
         let collectiblesCollected = 0;
         let totalCollectibles = 0;
         let isTargetZoneActive = false;
+        let tutorialActive = true;
 
         // Joystick state variables
         let joystickActive = false;
@@ -461,120 +493,119 @@
         window.addEventListener('resize', () => { if (gameState === 'playing' || gameState === 'level_transition') { setupGame(currentLevel - 1); } });
         // Enhanced intro panel handling with touch support
         function showIntroPanel(panelNumber) {
-                    console.log("Transitioning to intro panel:", panelNumber);
+            console.log("Transitioning to intro panel:", panelNumber);
+            
+            const currentPanel = document.querySelector('.intro-panel.active');
+            const nextPanel = document.querySelector(`.intro-panel[data-panel="${panelNumber}"]`);
+            
+            if (!nextPanel) {
+                console.error("Could not find panel:", panelNumber);
+                return;
+            }
+            
+            if (currentPanel) {
+                currentPanel.style.opacity = '0';
+                setTimeout(() => {
+                    currentPanel.style.display = 'none';
+                    currentPanel.classList.remove('active');
                     
-                    const currentPanel = document.querySelector('.intro-panel.active');
-                    const nextPanel = document.querySelector(`.intro-panel[data-panel="${panelNumber}"]`);
-                    
-                    if (!nextPanel) {
-                        console.error("Could not find panel:", panelNumber);
+                    nextPanel.style.display = 'block';
+                    nextPanel.offsetHeight;
+                    nextPanel.classList.add('active');
+                    nextPanel.style.opacity = '1';
+                    console.log("Panel transition complete:", nextPanel.dataset.panel);
+                }, 300);
+            }
+        }
+        
+        function setupIntroTouchHandlers() {
+            // Add CSS for smooth transitions
+            const style = document.createElement('style');
+            style.textContent = `
+                .intro-panel {
+                    transition: opacity 0.3s ease;
+                    opacity: 0;
+                    pointer-events: none;
+                    display: none;
+                }
+                .intro-panel.active {
+                    opacity: 1;
+                    pointer-events: auto;
+                    display: block;
+                }
+                #intro-overlay button {
+                    transition: transform 0.2s ease;
+                    cursor: pointer;
+                    padding: 10px 20px;
+                    background: linear-gradient(45deg, #f95738, #ff8c42);
+                    border: none;
+                    border-radius: 8px;
+                    color: white;
+                    font-family: 'Press Start 2P', cursive;
+                    font-size: 0.8rem;
+                    text-transform: uppercase;
+                }
+                #intro-overlay button:active {
+                    transform: scale(0.95);
+                }
+            `;
+            document.head.appendChild(style);
+    
+            // Set initial panel state
+            const initialPanel = document.querySelector('.intro-panel.active');
+            if (initialPanel) {
+                initialPanel.style.display = 'block';
+                initialPanel.style.opacity = '1';
+            }
+    
+            // Handle button clicks
+            const introButtons = document.querySelectorAll('#intro-overlay button');
+            introButtons.forEach(button => {
+                const handleClick = (e) => {
+                    e.preventDefault();
+                    const currentPanel = button.closest('.intro-panel');
+                    if (!currentPanel || !currentPanel.classList.contains('active')) {
+                        console.log("Invalid click - panel not active");
                         return;
                     }
                     
-                    // Fade out current panel
-                    if (currentPanel) {
+                    const nextAction = button.dataset.next;
+                    console.log("Next action:", nextAction);
+                    
+                    if (nextAction === 'start') {
+                        console.log("Starting tutorial from final story panel");
                         currentPanel.style.opacity = '0';
                         setTimeout(() => {
                             currentPanel.style.display = 'none';
                             currentPanel.classList.remove('active');
-                            
-                            // Show next panel
-                            nextPanel.style.display = 'block';
-                            // Force reflow
-                            nextPanel.offsetHeight;
-                            nextPanel.classList.add('active');
-                            nextPanel.style.opacity = '1';
-                            console.log("Panel transition complete:", nextPanel.dataset.panel);
+                            introOverlay.style.display = 'none';
+                            document.getElementById('tutorial-overlay').style.display = 'flex';
+                            showTutorialPanel(1);
                         }, 300);
+                    } else {
+                        const nextPanelNumber = parseInt(nextAction);
+                        if (!isNaN(nextPanelNumber)) {
+                            showIntroPanel(nextPanelNumber);
+                        }
                     }
-                }
-        
-                function setupIntroTouchHandlers() {
-                    // Add CSS for smooth transitions
-                    const style = document.createElement('style');
-                    style.textContent = `
-                        .intro-panel {
-                            transition: opacity 0.3s ease;
-                            opacity: 0;
-                            pointer-events: none;
-                            display: none;
-                        }
-                        .intro-panel.active {
-                            opacity: 1;
-                            pointer-events: auto;
-                            display: block;
-                        }
-                        #intro-overlay button {
-                            transition: transform 0.2s ease;
-                            cursor: pointer;
-                            padding: 10px 20px;
-                            background: linear-gradient(45deg, #f95738, #ff8c42);
-                            border: none;
-                            border-radius: 8px;
-                            color: white;
-                            font-family: 'Press Start 2P', cursive;
-                            font-size: 0.8rem;
-                            text-transform: uppercase;
-                        }
-                        #intro-overlay button:active {
-                            transform: scale(0.95);
-                        }
-                    `;
-                    document.head.appendChild(style);
-        
-                    // Set initial panel state
-                    const initialPanel = document.querySelector('.intro-panel.active');
-                    if (initialPanel) {
-                        initialPanel.style.display = 'block';
-                        initialPanel.style.opacity = '1';
+                };
+    
+                // Add both touch and click handlers with debounce
+                let isHandling = false;
+                const debouncedHandler = (e) => {
+                    if (isHandling) {
+                        console.log("Ignoring click - already handling");
+                        return;
                     }
-        
-                    // Handle button clicks
-                    const introButtons = document.querySelectorAll('#intro-overlay button');
-                    introButtons.forEach(button => {
-                        const handleClick = (e) => {
-                            e.preventDefault();
-                            const currentPanel = button.closest('.intro-panel');
-                            if (!currentPanel || !currentPanel.classList.contains('active')) {
-                                console.log("Invalid click - panel not active");
-                                return;
-                            }
-                            
-                            const nextAction = button.dataset.next;
-                            console.log("Next action:", nextAction);
-                            
-                            if (nextAction === 'start') {
-                                console.log("Starting game from final panel");
-                                currentPanel.style.opacity = '0';
-                                setTimeout(() => {
-                                    currentPanel.style.display = 'none';
-                                    currentPanel.classList.remove('active');
-                                    startGame();
-                                }, 300);
-                            } else {
-                                const nextPanelNumber = parseInt(nextAction);
-                                if (!isNaN(nextPanelNumber)) {
-                                    showIntroPanel(nextPanelNumber);
-                                }
-                            }
-                        };
-        
-                        // Add both touch and click handlers with debounce
-                        let isHandling = false;
-                        const debouncedHandler = (e) => {
-                            if (isHandling) {
-                                console.log("Ignoring click - already handling");
-                                return;
-                            }
-                            isHandling = true;
-                            handleClick(e);
-                            setTimeout(() => { isHandling = false; }, 300);
-                        };
-        
-                        button.addEventListener('touchstart', debouncedHandler, { passive: false });
-                        button.addEventListener('click', debouncedHandler);
-                    });
-                }
+                    isHandling = true;
+                    handleClick(e);
+                    setTimeout(() => { isHandling = false; }, 300);
+                };
+    
+                button.addEventListener('touchstart', debouncedHandler, { passive: false });
+                button.addEventListener('click', debouncedHandler);
+            });
+        }
         function startGame() { /* ... Unchanged ... */ console.log("startGame function called"); currentLevel = 1; if (Tone.context.state !== 'running') { Tone.start().then(() => { console.log("AudioContext started!"); setupSounds(); proceedWithGameStart(); }).catch(e => { console.error("Tone.start() failed:", e); proceedWithGameStart(); }); } else { if (!soundsReady) setupSounds(); proceedWithGameStart(); } }
         function proceedWithGameStart() {
             console.log("Proceeding with game start...");
@@ -1161,6 +1192,150 @@
                  playAgainButton.addEventListener('click', handlePlayAgain);
                  console.log("Play again button handlers added.");
              }
+        };
+
+        function showTutorialPanel(panelNumber) {
+            console.log("Transitioning to tutorial panel:", panelNumber);
+            
+            const tutorialOverlay = document.getElementById('tutorial-overlay');
+            const currentPanel = document.querySelector('.tutorial-panel.active');
+            const nextPanel = document.querySelector(`.tutorial-panel[data-panel="${panelNumber}"]`);
+            
+            if (!nextPanel) {
+                console.error("Could not find tutorial panel:", panelNumber);
+                return;
+            }
+            
+            // Ensure tutorial overlay is visible
+            tutorialOverlay.style.display = 'flex';
+            
+            if (currentPanel) {
+                currentPanel.style.opacity = '0';
+                setTimeout(() => {
+                    currentPanel.style.display = 'none';
+                    currentPanel.classList.remove('active');
+                    
+                    nextPanel.style.display = 'block';
+                    nextPanel.offsetHeight;
+                    nextPanel.classList.add('active');
+                    nextPanel.style.opacity = '1';
+                    console.log("Tutorial panel transition complete:", nextPanel.dataset.panel);
+                }, 300);
+            } else {
+                // If no current panel, just show the next one
+                nextPanel.style.display = 'block';
+                nextPanel.classList.add('active');
+                nextPanel.style.opacity = '1';
+                console.log("Initial tutorial panel shown:", nextPanel.dataset.panel);
+            }
+        }
+
+        function setupTutorialHandlers() {
+            const tutorialButtons = document.querySelectorAll('#tutorial-overlay button');
+            tutorialButtons.forEach(button => {
+                const handleClick = (e) => {
+                    e.preventDefault();
+                    const currentPanel = button.closest('.tutorial-panel');
+                    if (!currentPanel || !currentPanel.classList.contains('active')) {
+                        console.log("Invalid click - tutorial panel not active");
+                        return;
+                    }
+                    
+                    const nextAction = button.dataset.next;
+                    console.log("Tutorial next action:", nextAction);
+                    
+                    if (nextAction === 'start') {
+                        currentPanel.style.opacity = '0';
+                        setTimeout(() => {
+                            currentPanel.style.display = 'none';
+                            currentPanel.classList.remove('active');
+                            tutorialActive = false;
+                            document.getElementById('tutorial-overlay').style.display = 'none';
+                            startGame();
+                        }, 300);
+                    } else {
+                        const nextPanelNumber = parseInt(nextAction);
+                        if (!isNaN(nextPanelNumber)) {
+                            showTutorialPanel(nextPanelNumber);
+                        }
+                    }
+                };
+                
+                let isHandling = false;
+                const debouncedHandler = (e) => {
+                    if (isHandling) return;
+                    isHandling = true;
+                    handleClick(e);
+                    setTimeout(() => { isHandling = false; }, 300);
+                };
+                
+                button.addEventListener('touchstart', debouncedHandler, { passive: false });
+                button.addEventListener('click', debouncedHandler);
+            });
+        }
+
+        window.onload = () => {
+            console.log("Window loaded.");
+            gameState = 'intro';
+            
+            // Ensure intro overlay is visible and tutorial is hidden
+            introOverlay.style.display = 'flex';
+            introOverlay.style.opacity = '1';
+            document.getElementById('tutorial-overlay').style.display = 'none';
+            
+            setupGame(currentLevel - 1).then(() => {
+                console.log("Initial game setup complete");
+            });
+            
+            // Add touch listeners after DOM is loaded
+            joystickArea.addEventListener('touchstart', (e) => { e.preventDefault(); joystickActive = true; joystickArea.classList.add('active'); const touch = e.changedTouches[0]; joystickStartX = touch.clientX; joystickStartY = touch.clientY; }, { passive: false });
+            joystickArea.addEventListener('touchmove', (e) => { e.preventDefault(); if (!joystickActive) return; if (!joystickDimensionsCalculated || maxJoystickDist <= 0) return; const touch = e.changedTouches[0]; const currentX = touch.clientX; const currentY = touch.clientY; const areaRect = joystickArea.getBoundingClientRect(); const areaCenterX = areaRect.left + areaRect.width / 2; const areaCenterY = areaRect.top + areaRect.height / 2; let dx = currentX - areaCenterX; let dy = currentY - areaCenterY; const dist = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxJoystickDist); const knobX = clampedDist * Math.cos(angle); const knobY = clampedDist * Math.sin(angle); joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`; const deadZone = maxJoystickDist * 0.15; if (clampedDist > deadZone) { const magnitude = Math.sqrt(dx * dx + dy * dy); joystickDx = dx / magnitude; joystickDy = dy / magnitude; } else { joystickDx = 0; joystickDy = 0; } }, { passive: false });
+            joystickArea.addEventListener('touchend', (e) => { e.preventDefault(); if (!joystickActive) return; joystickActive = false; joystickArea.classList.remove('active'); joystickKnob.style.transform = `translate(-50%, -50%)`; joystickDx = 0; joystickDy = 0; }, { passive: false });
+            
+            // Add game area tap handler
+            gameContainer.addEventListener('touchstart', handleGameAreaTap, { passive: false });
+            console.log("Game area tap handler added.");
+            
+            // Add laser button handler
+            const laserButton = document.getElementById('laser-button');
+            laserButton.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameState === 'playing' && !player.isFiringLaser && Date.now() - player.lastLaserTime > player.laserCooldown) {
+                    fireLaser();
+                }
+            }, { passive: false });
+            console.log("Laser button handler added.");
+            
+            // Setup intro and tutorial handlers
+            setupIntroTouchHandlers();
+            setupTutorialHandlers();
+            console.log("Intro and tutorial handlers added.");
+
+            // Add restart button handler
+            const restartButton = document.getElementById('restart-button');
+            if (restartButton) {
+                const handleRestart = (e) => {
+                    e.preventDefault();
+                    startGame();
+                };
+                
+                restartButton.addEventListener('touchstart', handleRestart, { passive: false });
+                restartButton.addEventListener('click', handleRestart);
+                console.log("Restart button handlers added.");
+            }
+
+            // Add play again button handler
+            const playAgainButton = document.getElementById('play-again-button');
+            if (playAgainButton) {
+                const handlePlayAgain = (e) => {
+                    e.preventDefault();
+                    restartGame();
+                };
+                
+                playAgainButton.addEventListener('touchstart', handlePlayAgain, { passive: false });
+                playAgainButton.addEventListener('click', handlePlayAgain);
+                console.log("Play again button handlers added.");
+            }
         };
 
     </script>
