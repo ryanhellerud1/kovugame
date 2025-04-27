@@ -380,8 +380,8 @@
         // --- Game Objects --- (Unchanged definitions)
         const player = {
             x: 50, y: 50,
-            width: window.innerWidth <= 768 ? 64 : 84, // Smaller on mobile but still visible
-            height: window.innerWidth <= 768 ? 64 : 84, // Smaller on mobile but still visible
+            width: window.innerWidth <= 768 ? 84 : 84, // 30% larger on mobile (64 * 1.3 ≈ 84)
+            height: window.innerWidth <= 768 ? 84 : 84, // 30% larger on mobile (64 * 1.3 ≈ 84)
             speed: window.innerWidth <= 768 ? 200 : 180, /* Slightly faster on mobile for better control */
             isDashing: false, dashCooldown: 1500, lastDashTime: 0, dashDuration: 250, dashParticles: [],
             laserCooldown: 2000, lastLaserTime: 0, isFiringLaser: false, laserDuration: 150, laserRange: 300, laserWidth: 5,
