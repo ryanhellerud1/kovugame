@@ -592,7 +592,10 @@
             return rivalImages[randomIndex].img;
         }
         const targetZone = { x: 600, y: 400, radius: 40, color: 'rgba(0, 255, 0, 0.3)', borderColor: '#00ff00', element: null };
-        const collectibles = []; const collectibleRadius = 10; const collectibleWidth = 15; const collectibleHeight = 10;
+        const collectibles = []; 
+        const collectibleRadius = 15; // Increased radius for coins
+        const collectibleWidth = 20; // Increased width for coins
+        const collectibleHeight = 20; // Increased height for coins
         const particles = [];
         const feedbackMessages = [ /* ... Unchanged ... */ { trigger: 'dash', text: '#KovuBoost!', approval: 3, sound: 'dash' }, { trigger: 'halfway', text: 'Looking good! #Progress', approval: 5, sound: 'feedbackPositive', note: 'G4' }, { trigger: 'dodge', text: 'Nice dodge! #Skillz', approval: 4, sound: 'feedbackPositive', note: 'A4' }, { trigger: 'hazard_hit', text: 'Hazard Hit! Approval Lost!', approval: -15, sound: 'playerHit', negative: true }, { trigger: 'rival_collision', text: 'Collision! Ouch!', approval: -10, sound: 'playerHit', negative: true }, { trigger: 'collect', text: 'Data Packet! +Approval!', approval: 5, sound: 'collect', note: 'C5' }, { trigger: 'destroy_rival', text: 'Rival Deleted! #LaserFocus', approval: 10, sound: 'rivalDestroyed' }, { trigger: 'win', text: '#Victory! Community Morale Soaring!', approval: 20, sound: 'win', note: 'C5' }, { trigger: 'fud_hit', text: 'FUD Attack! -10% Approval!', approval: -10, sound: 'playerHit', negative: true } ];
         let halfwayReached = false;
@@ -705,7 +708,11 @@
                             x: potentialX,
                             y: potentialY,
                             radius: collectibleRadius,
-                            collected: false
+                            collected: false,
+                            rotation: 0, // Add rotation property
+                            rotationSpeed: 0.05 + Math.random() * 0.05, // Random rotation speed
+                            bobOffset: Math.random() * Math.PI * 2, // Random starting position for bobbing
+                            bobSpeed: 0.05 + Math.random() * 0.05 // Random bobbing speed
                         });
                         placed = true;
                     }
@@ -1531,8 +1538,46 @@
                 ctx.lineTo(canvasWidth, y);
                 ctx.stroke();
             }
-            // Collectibles (Unchanged)
-            collectibles.forEach(collectible => { if (!collectible.collected) { const packetX = collectible.x - collectibleWidth / 2; const packetY = collectible.y - collectibleHeight / 2; ctx.fillStyle = '#00ffff'; ctx.fillRect(packetX, packetY, collectibleWidth, collectibleHeight); ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(packetX + 2, packetY + 2); ctx.lineTo(packetX + collectibleWidth - 2, packetY + 2); ctx.moveTo(packetX + 2, packetY + collectibleHeight / 2); ctx.lineTo(packetX + collectibleWidth - 2, packetY + collectibleHeight / 2); ctx.moveTo(packetX + 2, packetY + collectibleHeight - 2); ctx.lineTo(packetX + collectibleWidth - 2, packetY + collectibleHeight - 2); ctx.stroke(); ctx.shadowColor = 'rgba(0, 255, 255, 0.5)'; ctx.shadowBlur = 5; ctx.fillStyle = '#00ffff'; ctx.fillRect(packetX, packetY, collectibleWidth, collectibleHeight); ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; } });
+            // Collectibles (Animated Coins)
+            collectibles.forEach(collectible => { 
+                if (!collectible.collected) { 
+                    // Update animation properties
+                    collectible.rotation += collectible.rotationSpeed;
+                    collectible.bobOffset += collectible.bobSpeed;
+                    
+                    // Calculate bobbing effect
+                    const bobAmount = 2;
+                    const bobY = Math.sin(collectible.bobOffset) * bobAmount;
+                    
+                    // Draw coin
+                    ctx.save();
+                    ctx.translate(collectible.x, collectible.y + bobY);
+                    ctx.rotate(collectible.rotation);
+                    
+                    // Draw coin body
+                    ctx.beginPath();
+                    ctx.arc(0, 0, collectible.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = '#FFD700'; // Gold color
+                    ctx.shadowColor = 'rgba(255, 215, 0, 0.5)';
+                    ctx.shadowBlur = 10;
+                    ctx.fill();
+                    
+                    // Draw coin edge
+                    ctx.beginPath();
+                    ctx.arc(0, 0, collectible.radius, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#DAA520'; // Darker gold for edge
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Draw coin details
+                    ctx.beginPath();
+                    ctx.arc(0, 0, collectible.radius * 0.3, 0, Math.PI * 2);
+                    ctx.fillStyle = '#DAA520';
+                    ctx.fill();
+                    
+                    ctx.restore();
+                } 
+            });
             // Draw scope sight
             const scopeLength = 80; // Length of the scope line (increased from 40)
             const scopeOffset = 10; // Distance from player center
