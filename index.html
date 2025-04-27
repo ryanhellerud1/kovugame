@@ -516,6 +516,16 @@
         function handleGameAreaTap(event) {
                             event.preventDefault();
                             if (gameState !== 'playing') return;
+                            
+                            // Check if tap is on laser button or joystick
+                            const target = event.target;
+                            if (target.id === 'laser-button' ||
+                                target.className === 'laser-button-inner' ||
+                                target.id === 'joystick-area' ||
+                                target.id === 'joystick-base' ||
+                                target.id === 'joystick-knob') {
+                                return;
+                            }
                 
                             const currentTime = Date.now();
                             const touch = event.touches[0];
