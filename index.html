@@ -463,13 +463,13 @@
                     img: getRandomRivalImage(),
                     hazardActive: false,
                     isInWarning: false,
-                    lastHazardTime: Date.now() - Math.random() * hazardCooldown,
+                    lastHazardTime: Date.now() - Math.random() * hazardCooldown + 2000, // Reduced initial delay to 2 seconds
                     hazardElement: hazardElement,
                     hazardFeedbackGiven: false,
                     dodgeFeedbackGiven: false,
                     isDestroyed: false,
                     hazardCooldown: hazardCooldown,
-                    hazardTimer: hazardCooldown + hazardRandomDelay,
+                    hazardTimer: hazardCooldown + hazardRandomDelay + 2000, // Reduced initial delay to 2 seconds
                     hazardTargetX: 0,
                     hazardTargetY: 0
                 });
