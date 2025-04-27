@@ -361,28 +361,168 @@
 
         // --- Sound Effects Setup --- (Unchanged)
         let soundsReady = false; let synths = {};
-        function setupSounds() { try { synths.dash = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 } }).toDestination(); synths.collect = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.05, release: 0.2 } }).toDestination(); synths.win = new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.05, decay: 0.2, sustain: 0.3, release: 0.5 } }).toDestination(); synths.feedbackPositive = new Tone.PluckSynth().toDestination(); synths.feedbackNegative = new Tone.NoiseSynth({ noise: { type: 'pink' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination(); synths.hazardWarn = new Tone.Synth({ oscillator: { type: 'pulse', width: 0.3 }, envelope: { attack: 0.01, decay: 0.05, sustain: 0.1, release: 0.1 } }).toDestination(); synths.laserFire = new Tone.Synth({ oscillator: { type: 'pwm', modulationFrequency: 0.2 }, envelope: { attack: 0.005, decay: 0.2, sustain: 0.01, release: 0.1 } }).toDestination(); synths.rivalDestroyed = new Tone.MetalSynth({ frequency: 100, envelope: { attack: 0.01, decay: 0.4, release: 0.2 }, harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5 }).toDestination(); synths.playerHit = new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.2 } }).toDestination(); synths.gameOver = new Tone.Synth({ oscillator: { type: 'fatsawtooth', count: 3, spread: 30 }, envelope: { attack: 0.1, decay: 0.5, sustain: 0.1, release: 0.8 } }).toDestination(); soundsReady = true; console.log("Tone.js Synths Initialized"); } catch (error) { console.error("Error initializing Tone.js:", error); } }
-        function playSound(type, note = null, duration = '8n') { if (!soundsReady || !synths[type]) return; try { if (type === 'feedbackNegative' || type === 'dash' || type === 'hazardWarn' || type === 'laserFire' || type === 'rivalDestroyed' || type === 'playerHit' || type === 'gameOver') { if (type === 'feedbackNegative') synths[type].triggerAttackRelease(duration); else if (type === 'dash') synths[type].triggerAttackRelease('C4', duration); else if (type === 'hazardWarn') synths[type].triggerAttackRelease('A4', '16n'); else if (type === 'laserFire') synths[type].triggerAttackRelease('G5', '16n'); else if (type === 'rivalDestroyed') synths[type].triggerAttackRelease(); else if (type === 'playerHit') synths[type].triggerAttackRelease('C3', '8n'); else if (type === 'gameOver') synths[type].triggerAttackRelease('C2', '1n'); } else if (note) { synths[type].triggerAttackRelease(note, duration); } } catch (error) { console.error(`Error playing sound ${type}:`, error); } }
+        function setupSounds() { 
+            try { 
+                // Create a single transport for all sounds
+                Tone.Transport.start();
+                
+                synths.dash = new Tone.Synth({ 
+                    oscillator: { type: 'triangle' }, 
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 } 
+                }).toDestination(); 
+                
+                synths.collect = new Tone.Synth({ 
+                    oscillator: { type: 'sine' }, 
+                    envelope: { attack: 0.005, decay: 0.1, sustain: 0.05, release: 0.2 } 
+                }).toDestination(); 
+                
+                synths.win = new Tone.Synth({ 
+                    oscillator: { type: 'sawtooth' }, 
+                    envelope: { attack: 0.05, decay: 0.2, sustain: 0.3, release: 0.5 } 
+                }).toDestination(); 
+                
+                synths.feedbackPositive = new Tone.PluckSynth().toDestination(); 
+                
+                synths.feedbackNegative = new Tone.NoiseSynth({ 
+                    noise: { type: 'pink' }, 
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 } 
+                }).toDestination(); 
+                
+                synths.hazardWarn = new Tone.Synth({ 
+                    oscillator: { type: 'pulse', width: 0.3 }, 
+                    envelope: { attack: 0.01, decay: 0.05, sustain: 0.1, release: 0.1 } 
+                }).toDestination(); 
+                
+                synths.laserFire = new Tone.Synth({ 
+                    oscillator: { type: 'pwm', modulationFrequency: 0.2 }, 
+                    envelope: { attack: 0.005, decay: 0.2, sustain: 0.01, release: 0.1 } 
+                }).toDestination(); 
+                
+                synths.rivalDestroyed = new Tone.MetalSynth({ 
+                    frequency: 100, 
+                    envelope: { attack: 0.01, decay: 0.4, release: 0.2 }, 
+                    harmonicity: 5.1, 
+                    modulationIndex: 32, 
+                    resonance: 4000, 
+                    octaves: 1.5 
+                }).toDestination(); 
+                
+                synths.playerHit = new Tone.Synth({ 
+                    oscillator: { type: 'square' }, 
+                    envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.2 } 
+                }).toDestination(); 
+                
+                synths.gameOver = new Tone.Synth({ 
+                    oscillator: { type: 'fatsawtooth', count: 3, spread: 30 }, 
+                    envelope: { attack: 0.1, decay: 0.5, sustain: 0.1, release: 0.8 } 
+                }).toDestination(); 
+                
+                soundsReady = true; 
+                console.log("Tone.js Synths Initialized"); 
+            } catch (error) { 
+                console.error("Error initializing Tone.js:", error); 
+            } 
+        }
+
+        function playSound(type, note = null, duration = '8n') { 
+            if (!soundsReady || !synths[type]) return; 
+            
+            try {
+                // Use Tone.Transport for precise timing
+                const now = Tone.now();
+                
+                if (type === 'feedbackNegative' || type === 'dash' || type === 'hazardWarn' || 
+                    type === 'laserFire' || type === 'rivalDestroyed' || type === 'playerHit' || 
+                    type === 'gameOver') {
+                    
+                    if (type === 'feedbackNegative') {
+                        synths[type].triggerAttackRelease(duration, now);
+                    } else if (type === 'dash') {
+                        synths[type].triggerAttackRelease('C4', duration, now);
+                    } else if (type === 'hazardWarn') {
+                        synths[type].triggerAttackRelease('A4', '16n', now);
+                    } else if (type === 'laserFire') {
+                        synths[type].triggerAttackRelease('G5', '16n', now);
+                    } else if (type === 'rivalDestroyed') {
+                        synths[type].triggerAttackRelease(now);
+                    } else if (type === 'playerHit') {
+                        synths[type].triggerAttackRelease('C3', '8n', now);
+                    } else if (type === 'gameOver') {
+                        synths[type].triggerAttackRelease('C2', '1n', now);
+                    }
+                } else if (note) {
+                    synths[type].triggerAttackRelease(note, duration, now);
+                }
+            } catch (error) {
+                console.error(`Error playing sound ${type}:`, error);
+            }
+        }
 
         // Background images
         let backgroundImage = new Image();
         let backgroundImage2 = new Image();
+        let backgroundImage3 = new Image(); // For level 5
+        let backgroundImage4 = new Image(); // For level 6
         
-        backgroundImage.onload = () => {
-            console.log("Background image 1 loaded successfully");
-        };
-        backgroundImage.onerror = () => {
-            console.error("Failed to load background image 1");
-        };
-        backgroundImage2.onload = () => {
-            console.log("Background image 2 loaded successfully");
-        };
-        backgroundImage2.onerror = () => {
-            console.error("Failed to load background image 2");
+        // Track image loading status
+        const imageLoadStatus = {
+            bg1: false,
+            bg2: false,
+            bg3: false,
+            bg4: false
         };
         
-        backgroundImage.src = 'bg.jpg';
-        backgroundImage2.src = 'bg2.jpg';
+        // Function to handle image loading with retries
+        function loadImageWithRetry(img, src, statusKey, maxRetries = 2) {
+            return new Promise((resolve) => {
+                let retries = 0;
+                
+                const loadImage = () => {
+                    img.onload = () => {
+                        console.log(`Background image ${statusKey} loaded successfully`);
+                        imageLoadStatus[statusKey] = true;
+                        resolve();
+                    };
+                    
+                    img.onerror = () => {
+                        console.error(`Failed to load background image ${statusKey}: ${src}`);
+                        imageLoadStatus[statusKey] = false;
+                        
+                        if (retries < maxRetries) {
+                            retries++;
+                            console.log(`Retrying load for ${statusKey} (attempt ${retries})`);
+                            setTimeout(() => {
+                                img.src = src;
+                            }, 1000 * retries);
+                        } else {
+                            resolve();
+                        }
+                    };
+                    
+                    img.src = src;
+                };
+                
+                loadImage();
+            });
+        }
+        
+        // Load images with error handling and retries
+        async function loadBackgroundImages() {
+            try {
+                await Promise.all([
+                    loadImageWithRetry(backgroundImage, 'bg.jpg', 'bg1'),
+                    loadImageWithRetry(backgroundImage2, 'bg2.jpg', 'bg2'),
+                    loadImageWithRetry(backgroundImage3, 'memeversebg.jpg', 'bg3'),
+                    loadImageWithRetry(backgroundImage4, 'whitehousebg.jpg', 'bg4')
+                ]);
+                console.log("All background images loaded or failed gracefully");
+            } catch (error) {
+                console.error("Error during background image loading:", error);
+            }
+        }
+        
+        // Call loadBackgroundImages when the window loads
+        window.addEventListener('load', loadBackgroundImages);
 
         // --- Game Objects --- (Unchanged definitions)
         const player = {
@@ -1284,9 +1424,40 @@
         function draw() {
             ctx.clearRect(0, 0, canvasWidth, canvasHeight);
             
-            // Draw background image based on level
-            const currentBg = (currentLevel === 2 || currentLevel === 4) ? backgroundImage2 : backgroundImage;
-            ctx.drawImage(currentBg, 0, 0, canvasWidth, canvasHeight);
+            // Draw background image based on level with improved fallback
+            let currentBg;
+            try {
+                if (currentLevel === 2 || currentLevel === 4) {
+                    currentBg = imageLoadStatus.bg2 ? backgroundImage2 : backgroundImage;
+                } else if (currentLevel === 5) {
+                    currentBg = imageLoadStatus.bg3 ? backgroundImage3 : (imageLoadStatus.bg2 ? backgroundImage2 : backgroundImage);
+                } else if (currentLevel === 6) {
+                    currentBg = imageLoadStatus.bg4 ? backgroundImage4 : (imageLoadStatus.bg2 ? backgroundImage2 : backgroundImage);
+                } else {
+                    currentBg = backgroundImage;
+                }
+                
+                // Ensure we have a valid image before drawing
+                if (currentBg && currentBg.complete && currentBg.naturalWidth > 0) {
+                    ctx.drawImage(currentBg, 0, 0, canvasWidth, canvasHeight);
+                } else {
+                    console.warn("Background image not ready, using fallback");
+                    // Fallback background with level-specific colors
+                    if (currentLevel === 5) {
+                        ctx.fillStyle = '#1a1a2e'; // Dark blue for memeverse
+                    } else if (currentLevel === 6) {
+                        ctx.fillStyle = '#2c3e50'; // Darker blue for whitehouse
+                    } else {
+                        ctx.fillStyle = '#1a1a2e'; // Default dark blue
+                    }
+                    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                }
+            } catch (error) {
+                console.error("Error drawing background:", error);
+                // Fallback background
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+            }
             
             // Background elements & grid with increased opacity for visibility
             ctx.fillStyle = 'rgba(74, 74, 138, 0.25)';
