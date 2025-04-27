@@ -127,6 +127,17 @@
             border: 2px solid rgba(255, 255, 255, 0.4);
             transition: all 0.2s ease;
         }
+        #laser-button .laser-button-inner {
+            background-color: rgba(255, 50, 50, 0.7);
+            border-color: rgba(255, 255, 255, 0.8);
+            transition: all 0.2s ease;
+        }
+        
+        #laser-button.cooldown .laser-button-inner {
+            background-color: rgba(255, 50, 50, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
         #laser-button:active .laser-button-inner {
             background-color: rgba(255, 100, 100, 0.7);
             border-color: rgba(255, 255, 255, 0.8);
@@ -849,6 +860,16 @@
                     console.log("Joystick dimensions calculated:", joystickRadius, maxJoystickDist);
                 } else {
                      console.warn("Could not calculate valid joystick dimensions yet.");
+                }
+            }
+
+            // Update laser button cooldown state
+            if (gameState === 'playing') {
+                const laserButton = document.getElementById('laser-button');
+                if (laserButton) {
+                    const now = Date.now();
+                    const isOnCooldown = now - player.lastLaserTime < player.laserCooldown;
+                    laserButton.classList.toggle('cooldown', isOnCooldown);
                 }
             }
 
