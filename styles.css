@@ -1,0 +1,333 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #0a0a1a;
+    font-family: 'Press Start 2P', cursive;
+}
+
+#game-wrapper {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+#game-container {
+    width: 100%;
+    height: 100%;
+    max-width: 1200px;
+    max-height: 800px;
+    position: relative;
+    background-color: #0f0f23;
+    overflow: hidden;
+}
+
+#gameCanvas {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#intro-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 100;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.intro-panel {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(10, 10, 26, 0.95);
+    padding: 2rem;
+    border-radius: 8px;
+    text-align: center;
+    color: #fff;
+    max-width: 80%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.intro-panel.active {
+    display: block;
+    opacity: 1;
+}
+
+.intro-panel.active {
+    display: block;
+}
+
+.intro-panel img {
+    max-width: 100%;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+}
+
+.intro-panel p {
+    margin: 1rem 0;
+    line-height: 1.6;
+}
+
+#tutorial-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 100;
+}
+
+#game-over-overlay,
+#win-message {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 100;
+}
+
+.tutorial-panel {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(10, 10, 26, 0.95);
+    padding: 2rem;
+    border-radius: 8px;
+    text-align: center;
+    color: #fff;
+    max-width: 80%;
+}
+
+.tutorial-panel.active {
+    display: block;
+}
+
+.tutorial-panel h2 {
+    margin-bottom: 1.5rem;
+    color: #4a4a8a;
+}
+
+.tutorial-panel p {
+    margin: 1rem 0;
+    line-height: 1.6;
+}
+
+button {
+    background-color: #4a4a8a;
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.8rem;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #5a5a9a;
+}
+
+#ui-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+}
+
+#ui-left, #ui-right {
+    color: white;
+    font-size: 0.8rem;
+}
+
+#kcc-status {
+    margin-bottom: 0.5rem;
+}
+
+#approval-meter {
+    width: 150px;
+    height: 20px;
+    margin-left: 0.5rem;
+}
+
+.target-zone {
+    position: absolute;
+    border: 2px solid rgba(74, 74, 138, 0.5);
+    border-radius: 50%;
+    pointer-events: none;
+    transition: all 0.3s;
+}
+
+.target-zone.active {
+    border-color: rgba(74, 255, 138, 0.8);
+    box-shadow: 0 0 20px rgba(74, 255, 138, 0.3);
+}
+
+#feedback-area {
+    position: absolute;
+    bottom: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    text-align: center;
+    pointer-events: none;
+}
+
+.feedback-message {
+    color: white;
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUpOut 2s ease-out forwards;
+}
+
+@keyframes fadeUpOut {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    20% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    80% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+#mobile-tutorial {
+    display: none;
+    position: absolute;
+    bottom: 30%;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: 0.8rem;
+    text-align: center;
+    pointer-events: none;
+}
+
+#touch-controls-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 25%;
+    display: none;
+}
+
+#joystick-area {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 120px;
+    height: 120px;
+}
+
+#joystick-base {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+#joystick-knob {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+#laser-button {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 0, 0, 0.2);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.laser-button-inner {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 0, 0, 0.5);
+    border-radius: 50%;
+}
+
+@media (max-width: 768px) {
+    #touch-controls-container {
+        display: block;
+    }
+    
+    #mobile-tutorial {
+        display: block;
+    }
+}
+
+.dogen-hazard {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.dogen-hazard.warning {
+    background-color: rgba(255, 165, 0, 0.3);
+    border: 2px solid rgba(255, 165, 0, 0.8);
+    box-shadow: 0 0 15px rgba(255, 165, 0, 0.4);
+}
+
+.dogen-hazard.active {
+    background-color: rgba(255, 0, 0, 0.3);
+    border: 2px solid rgba(255, 0, 0, 0.8);
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+}
