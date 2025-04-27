@@ -953,8 +953,31 @@
 
             // Check halfway point (Unchanged)
             if (!halfwayReached && player.x > canvasWidth / 2) { halfwayReached = true; triggerFeedback('halfway'); }
-            // Check Collectible Collision & Target Activation (Unchanged)
-            for (let i = collectibles.length - 1; i >= 0; i--) { const collectible = collectibles[i]; if (!collectible.collected) { const dx = (player.x + player.width / 2) - collectible.x; const dy = (player.y + player.height / 2) - collectible.y; const distance = Math.sqrt(dx * dx + dy * dy); if (distance < collectible.radius + player.width / 2) { collectible.collected = true; collectiblesCollected++; triggerFeedback('collect'); updateObjectiveText(); const allEnemiesDestroyed = rivals.every(rival => rival.isDestroyed); if (collectiblesCollected >= totalCollectibles && allEnemiesDestroyed && !isTargetZoneActive) { isTargetZoneActive = true; console.log("All collectibles gathered and enemies destroyed! Target zone active."); if(targetZone.element) targetZone.element.classList.add('active'); updateObjectiveText(); } } } }
+            // Check Collectible Collision & Target Activation
+            for (let i = collectibles.length - 1; i >= 0; i--) { 
+                const collectible = collectibles[i]; 
+                if (!collectible.collected) { 
+                    const dx = (player.x + player.width / 2) - collectible.x; 
+                    const dy = (player.y + player.height / 2) - collectible.y; 
+                    const distance = Math.sqrt(dx * dx + dy * dy); 
+                    if (distance < collectible.radius + player.width / 2) { 
+                        collectible.collected = true; 
+                        collectiblesCollected++; 
+                        triggerFeedback('collect'); 
+                        updateObjectiveText(); 
+                    } 
+                } 
+            }
+
+            // Check advancement condition more frequently
+            const allEnemiesDestroyed = rivals.every(rival => rival.isDestroyed);
+            if (collectiblesCollected >= totalCollectibles && allEnemiesDestroyed && !isTargetZoneActive) {
+                isTargetZoneActive = true;
+                console.log("All collectibles gathered and enemies destroyed! Target zone active.");
+                if(targetZone.element) targetZone.element.classList.add('active');
+                updateObjectiveText();
+            }
+
             // Check Level Win Condition (Unchanged)
             if (isTargetZoneActive) {
                 const distToTargetX = player.x + player.width / 2 - targetZone.x;
