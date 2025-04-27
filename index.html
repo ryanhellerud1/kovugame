@@ -384,7 +384,7 @@
             height: window.innerWidth <= 768 ? 84 : 84, // 30% larger on mobile (64 * 1.3 ≈ 84)
             speed: window.innerWidth <= 768 ? 200 : 180, /* Slightly faster on mobile for better control */
             isDashing: false, dashCooldown: 1500, lastDashTime: 0, dashDuration: 250, dashParticles: [],
-            laserCooldown: 2000, lastLaserTime: 0, isFiringLaser: false, laserDuration: 150, laserRange: 300, laserWidth: 5,
+            laserCooldown: 1000, lastLaserTime: 0, isFiringLaser: false, laserDuration: 150, laserRange: 300, laserWidth: 5,
             lastMoveDx: 1, lastMoveDy: 0, isInvulnerable: false, invulnerabilityDuration: 1000, lastHitTime: 0,
             img: null,
             loadImage: async function() {
