@@ -1327,28 +1327,51 @@
                     ctx.globalAlpha = (Math.floor(Date.now() / 100) % 2 === 0) ? 1.0 : 0.5;
                 }
                 
-                if (player.img && player.img.complete && player.img.naturalWidth !== 0) {
-                    ctx.drawImage(player.img, player.x, player.y, player.width, player.height);
+                // Check if image exists and is valid
+                if (player.img) {
+                    // Check if image is loaded and has dimensions
+                    if (player.img.complete && player.img.naturalWidth > 0) {
+                        ctx.drawImage(player.img, player.x, player.y, player.width, player.height);
+                    } else {
+                        console.warn("Player image not fully loaded, using fallback");
+                        // Fallback rendering
+                        ctx.fillStyle = '#4a90e2';
+                        ctx.fillRect(player.x, player.y, player.width, player.height);
+                        ctx.strokeStyle = '#2980b9';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(player.x, player.y, player.width, player.height);
+                        
+                        // Attempt to reload if needed
+                        if (!player.img.complete || player.img.naturalWidth === 0) {
+                            console.log("Attempting to reload player image...");
+                            player.loadImage().catch(err => {
+                                console.error("Failed to reload player image:", err);
+                            });
+                        }
+                    }
                 } else {
-                    // Fallback rendering if image isn't loaded
+                    console.warn("Player image is null, using fallback");
+                    // Fallback rendering
                     ctx.fillStyle = '#4a90e2';
                     ctx.fillRect(player.x, player.y, player.width, player.height);
-                    // Add border for visibility
                     ctx.strokeStyle = '#2980b9';
                     ctx.lineWidth = 2;
                     ctx.strokeRect(player.x, player.y, player.width, player.height);
                     
-                    // Attempt to reload the image if it failed
-                    if (!player.img || player.img.naturalWidth === 0) {
-                        console.log("Attempting to reload player image...");
-                        player.loadImage();
-                    }
+                    // Attempt to load image
+                    console.log("Attempting to load player image...");
+                    player.loadImage().catch(err => {
+                        console.error("Failed to load player image:", err);
+                    });
                 }
             } catch (error) {
                 console.error('Error rendering player:', error);
                 // Emergency fallback
                 ctx.fillStyle = '#4a90e2';
                 ctx.fillRect(player.x, player.y, player.width, player.height);
+                ctx.strokeStyle = '#2980b9';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(player.x, player.y, player.width, player.height);
             }
             ctx.restore();
             // Optimized dash trail
