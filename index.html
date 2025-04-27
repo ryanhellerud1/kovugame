@@ -276,8 +276,22 @@
         // Initial image load
         player.loadImage();
         const rivals = []; const rivalBaseSpeed = 60; /* Base speed in pixels per second */ const rivalHazardRadius = 50; const rivalHazardWarningDuration = 800; const rivalHazardActiveDuration = 1000;
-        const rivalImg = new Image();
-        rivalImg.src = 'doge.png';
+        // Array of rival images
+        const rivalImages = [
+            { img: new Image(), src: 'doge.png' },
+            { img: new Image(), src: 'shaggy.png' },
+            { img: new Image(), src: 'shiba.png' },
+            { img: new Image(), src: 'pepe.png' }
+        ];
+        // Load all rival images
+        rivalImages.forEach(rivalImg => {
+            rivalImg.img.src = rivalImg.src;
+        });
+        // Function to get random rival image
+        function getRandomRivalImage() {
+            const randomIndex = Math.floor(Math.random() * rivalImages.length);
+            return rivalImages[randomIndex].img;
+        }
         const targetZone = { x: 600, y: 400, radius: 40, color: 'rgba(0, 255, 0, 0.3)', borderColor: '#00ff00', element: null };
         const collectibles = []; const collectibleRadius = 10; const collectibleWidth = 15; const collectibleHeight = 10;
         const particles = [];
@@ -289,9 +303,32 @@
         function createDisintegrationEffect(x, y, count = 20) { for (let i = 0; i < count; i++) { const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 2 + 1; particles.push({ x: x, y: y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, radius: Math.random() * 2.5 + 1, color: `rgba(${240 + Math.random() * 15}, ${190 + Math.random() * 30}, ${15 + Math.random() * 30}, ${0.8 + Math.random() * 0.2})`, life: 20 + Math.random() * 20, initialLife: 40 }); } }
         function spawnCollectibles(levelConf) { /* ... Unchanged ... */ collectibles.length = 0; totalCollectibles = levelConf.numCollectibles; collectiblesCollected = 0; isTargetZoneActive = false; const topMargin = 40; const bottomMargin = 50; for (let i = 0; i < totalCollectibles; i++) { let placed = false; let attempts = 0; while (!placed && attempts < 100) { attempts++; const potentialX = collectibleRadius + Math.random() * (canvasWidth - collectibleRadius * 2); const potentialY = topMargin + Math.random() * (canvasHeight - topMargin - bottomMargin); if (potentialY < topMargin || potentialY > canvasHeight - bottomMargin) continue; const distToPlayerStart = Math.sqrt(Math.pow(potentialX - canvasWidth / 4, 2) + Math.pow(potentialY - canvasHeight / 2, 2)); const distToTarget = Math.sqrt(Math.pow(potentialX - targetZone.x, 2) + Math.pow(potentialY - targetZone.y, 2)); let tooCloseToRivalStart = false; for(const r of rivals) { if (!r.isDestroyed) { const distToRival = Math.sqrt(Math.pow(potentialX - r.startX, 2) + Math.pow(potentialY - r.startY, 2)); if (distToRival < r.width * 2) { tooCloseToRivalStart = true; break; } } } if (distToPlayerStart > player.width * 2 && distToTarget > targetZone.radius * 1.5 && !tooCloseToRivalStart) { collectibles.push({ x: potentialX, y: potentialY, radius: collectibleRadius, collected: false }); placed = true; } } if (attempts >= 100) console.warn("Could not place all collectibles easily."); } console.log(`Level ${levelConf.level}: Spawned ${collectibles.length} Collectibles`); updateObjectiveText(); }
         function updateObjectiveText() { /* ... Unchanged ... */ if (isTargetZoneActive) { objectiveDisplay.textContent = levelConfigs[currentLevel - 1].objectiveText; } else { objectiveDisplay.textContent = `Collect Data! (${collectiblesCollected}/${totalCollectibles})`; } }
-        async function setupGame(levelIndex) { /* ... Added logging ... */ const levelConf = levelConfigs[levelIndex]; if (!levelConf) { console.error("Invalid level index:", levelIndex); gameState = 'win'; winMessage.style.display = 'flex'; winMessage.style.opacity = 1; return; } console.log(`Setting up Level ${levelConf.level}`); currentLevel = levelConf.level; canvasWidth = gameContainer.clientWidth; canvasHeight = gameContainer.clientHeight; canvas.width = canvasWidth; canvas.height = canvasHeight; levelIndicator.textContent = `Level: ${levelConf.level}`; player.x = canvasWidth / 4; player.y = canvasHeight / 2; player.lastMoveDx = 1; player.lastMoveDy = 0; targetZone.x = canvasWidth * levelConf.targetXRatio; targetZone.y = canvasHeight * levelConf.targetYRatio; if (!player.img) player.img = await loadSvg(player.svg, player.width, player.height); if (!rivalImg) rivalImg = await loadSvg(rivalSvg, 38, 38); rivals.length = 0; document.querySelectorAll('.dogen-hazard').forEach(el => el.remove()); particles.length = 0; for (let i = 0; i < levelConf.numRivals; i++) { const startX = canvasWidth * (0.5 + Math.random() * 0.3); const startY = canvasHeight * (0.15 + Math.random() * 0.7); const patrolRange = 70 + Math.random() * 60;
+        async function setupGame(levelIndex) { /* ... Added logging ... */ const levelConf = levelConfigs[levelIndex]; if (!levelConf) { console.error("Invalid level index:", levelIndex); gameState = 'win'; winMessage.style.display = 'flex'; winMessage.style.opacity = 1; return; } console.log(`Setting up Level ${levelConf.level}`); currentLevel = levelConf.level; canvasWidth = gameContainer.clientWidth; canvasHeight = gameContainer.clientHeight; canvas.width = canvasWidth; canvas.height = canvasHeight; levelIndicator.textContent = `Level: ${levelConf.level}`; player.x = canvasWidth / 4; player.y = canvasHeight / 2; player.lastMoveDx = 1; player.lastMoveDy = 0; targetZone.x = canvasWidth * levelConf.targetXRatio; targetZone.y = canvasHeight * levelConf.targetYRatio; if (!player.img) player.img = await loadSvg(player.svg, player.width, player.height); if (!rivalImages[0].img) rivalImages[0].img = await loadSvg(rivalSvg, 38, 38); rivals.length = 0; document.querySelectorAll('.dogen-hazard').forEach(el => el.remove()); particles.length = 0; for (let i = 0; i < levelConf.numRivals; i++) { const startX = canvasWidth * (0.5 + Math.random() * 0.3); const startY = canvasHeight * (0.15 + Math.random() * 0.7); const patrolRange = 70 + Math.random() * 60;
             const speed = rivalBaseSpeed * levelConf.rivalSpeedMultiplier * (0.8 + Math.random() * 0.4);
-            const hazardCooldown = levelConf.rivalHazardCooldownBase; const hazardRandomDelay = Math.random() * 1500; const hazardElement = document.createElement('div'); hazardElement.className = 'dogen-hazard'; hazardElement.style.width = `${rivalHazardRadius * 2}px`; hazardElement.style.height = `${rivalHazardRadius * 2}px`; gameContainer.appendChild(hazardElement); rivals.push({ x: startX, y: startY, width: 38, height: 38, speed: speed, direction: Math.random() < 0.5 ? 1 : -1, patrolRange: patrolRange, startX: startX, startY: startY, img: rivalImg, hazardActive: false, isInWarning: false, lastHazardTime: Date.now() - Math.random() * hazardCooldown, hazardElement: hazardElement, hazardFeedbackGiven: false, dodgeFeedbackGiven: false, isDestroyed: false, hazardCooldown: hazardCooldown, hazardTimer: hazardCooldown + hazardRandomDelay, hazardTargetX: 0, hazardTargetY: 0 }); }
+            const hazardCooldown = levelConf.rivalHazardCooldownBase; const hazardRandomDelay = Math.random() * 1500; const hazardElement = document.createElement('div'); hazardElement.className = 'dogen-hazard'; hazardElement.style.width = `${rivalHazardRadius * 2}px`; hazardElement.style.height = `${rivalHazardRadius * 2}px`; gameContainer.appendChild(hazardElement); rivals.push({
+                    x: startX,
+                    y: startY,
+                    width: 38,
+                    height: 38,
+                    speed: speed,
+                    direction: Math.random() < 0.5 ? 1 : -1,
+                    patrolRange: patrolRange,
+                    startX: startX,
+                    startY: startY,
+                    img: getRandomRivalImage(), // Use random rival image
+                    hazardActive: false,
+                    isInWarning: false,
+                    lastHazardTime: Date.now() - Math.random() * hazardCooldown,
+                    hazardElement: hazardElement,
+                    hazardFeedbackGiven: false,
+                    dodgeFeedbackGiven: false,
+                    isDestroyed: false,
+                    hazardCooldown: hazardCooldown,
+                    hazardTimer: hazardCooldown + hazardRandomDelay,
+                    hazardTargetX: 0,
+                    hazardTargetY: 0
+                });
+            }
             console.log(`Level ${levelConf.level}: Initialized Rivals Array:`, JSON.parse(JSON.stringify(rivals))); // Log created rivals
             if (!targetZone.element) { targetZone.element = document.createElement('div'); targetZone.element.className = 'target-zone'; gameContainer.appendChild(targetZone.element); } targetZone.element.style.left = `${targetZone.x - targetZone.radius}px`; targetZone.element.style.top = `${targetZone.y - targetZone.radius}px`; targetZone.element.style.width = `${targetZone.radius * 2}px`; targetZone.element.style.height = `${targetZone.radius * 2}px`; targetZone.element.classList.remove('active'); spawnCollectibles(levelConf); joystickDimensionsCalculated = false; console.log(`Level ${levelConf.level} setup complete.`); }
         window.addEventListener('resize', () => { if (gameState === 'playing' || gameState === 'level_transition') { setupGame(currentLevel - 1); } });
