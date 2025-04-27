@@ -621,7 +621,62 @@
         joystickArea.addEventListener('touchend', (e) => { e.preventDefault(); if (!joystickActive) return; joystickActive = false; joystickArea.classList.remove('active'); joystickKnob.style.transform = `translate(-50%, -50%)`; joystickDx = 0; joystickDy = 0; /* joystickMagnitude removed */ }, { passive: false });
 
         // --- Laser Firing Logic --- (Unchanged)
-        function fireLaser() { if (player.isFiringLaser || Date.now() - player.lastLaserTime < player.laserCooldown) return; player.isFiringLaser = true; player.lastLaserTime = Date.now(); playSound('laserFire'); const laserDx = player.lastMoveDx; const laserDy = player.lastMoveDy; const laserStartX = player.x + player.width / 2 + laserDx * (player.width * 0.4); const laserStartY = player.y + player.height / 2 + laserDy * (player.height * 0.4); const laserEndX = laserStartX + laserDx * player.laserRange; const laserEndY = laserStartY + laserDy * player.laserRange; let rivalHit = false; for (const rival of rivals) { if (!rival.isDestroyed && !rivalHit) { const rivalCenterX = rival.x + rival.width / 2; const rivalCenterY = rival.y + rival.height / 2; const rivalRadius = rival.width / 2; const sx = rivalCenterX - laserStartX; const sy = rivalCenterY - laserStartY; const segDx = laserEndX - laserStartX; const segDy = laserEndY - laserStartY; const segLenSq = segDx * segDx + segDy * segDy; let t = 0; if (segLenSq > 0) { t = (sx * segDx + sy * segDy) / segLenSq; t = Math.max(0, Math.min(1, t)); } const closestX = laserStartX + t * segDx; const closestY = laserStartY + t * segDy; const distSq = Math.pow(rivalCenterX - closestX, 2) + Math.pow(rivalCenterY - closestY, 2); const hitThreshold = rivalRadius + player.laserWidth / 2; if (distSq < hitThreshold * hitThreshold) { console.log("Rival Hit!"); rival.isDestroyed = true; rivalHit = true; triggerFeedback('destroy_rival'); createDisintegrationEffect(rivalCenterX, rivalCenterY); if (rival.hazardElement && rival.hazardElement.parentNode) { rival.hazardElement.parentNode.removeChild(rival.hazardElement); } break; } } } setTimeout(() => { player.isFiringLaser = false; }, player.laserDuration); }
+        function fireLaser() { 
+            if (player.isFiringLaser || Date.now() - player.lastLaserTime < player.laserCooldown) return; 
+            player.isFiringLaser = true; 
+            player.lastLaserTime = Date.now(); 
+            playSound('laserFire'); 
+            const laserDx = player.lastMoveDx; 
+            const laserDy = player.lastMoveDy; 
+            const laserStartX = player.x + player.width / 2 + laserDx * (player.width * 0.4); 
+            const laserStartY = player.y + player.height / 2 + laserDy * (player.height * 0.4); 
+            const laserEndX = laserStartX + laserDx * player.laserRange; 
+            const laserEndY = laserStartY + laserDy * player.laserRange; 
+            let rivalHit = false; 
+
+            // Increase laser width for more forgiving hit detection
+            const effectiveLaserWidth = player.laserWidth * 2.5; // Increased from base width
+
+            for (const rival of rivals) { 
+                if (!rival.isDestroyed && !rivalHit) { 
+                    const rivalCenterX = rival.x + rival.width / 2; 
+                    const rivalCenterY = rival.y + rival.height / 2; 
+                    const rivalRadius = rival.width / 2; 
+
+                    // Calculate distance from rival to laser line
+                    const sx = rivalCenterX - laserStartX; 
+                    const sy = rivalCenterY - laserStartY; 
+                    const segDx = laserEndX - laserStartX; 
+                    const segDy = laserEndY - laserStartY; 
+                    const segLenSq = segDx * segDx + segDy * segDy; 
+                    let t = 0; 
+                    if (segLenSq > 0) { 
+                        t = (sx * segDx + sy * segDy) / segLenSq; 
+                        t = Math.max(0, Math.min(1, t)); 
+                    } 
+                    const closestX = laserStartX + t * segDx; 
+                    const closestY = laserStartY + t * segDy; 
+                    const distSq = Math.pow(rivalCenterX - closestX, 2) + Math.pow(rivalCenterY - closestY, 2); 
+
+                    // More forgiving hit detection with increased hit area
+                    const hitThreshold = rivalRadius + effectiveLaserWidth / 2;
+                    const hitMargin = rivalRadius * 0.5; // Additional margin for near misses
+
+                    if (distSq < (hitThreshold + hitMargin) * (hitThreshold + hitMargin)) { 
+                        console.log("Rival Hit!"); 
+                        rival.isDestroyed = true; 
+                        rivalHit = true; 
+                        triggerFeedback('destroy_rival'); 
+                        createDisintegrationEffect(rivalCenterX, rivalCenterY); 
+                        if (rival.hazardElement && rival.hazardElement.parentNode) { 
+                            rival.hazardElement.parentNode.removeChild(rival.hazardElement); 
+                        } 
+                        break; 
+                    } 
+                } 
+            } 
+            setTimeout(() => { player.isFiringLaser = false; }, player.laserDuration); 
+        }
 
         // --- Damage Application Function --- (Unchanged)
         function applyDamage(type) {
