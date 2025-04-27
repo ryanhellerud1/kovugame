@@ -86,13 +86,6 @@
         .player-invulnerable { animation: flash-invulnerable 0.2s infinite alternate; }
         @keyframes flash-invulnerable { from { opacity: 1; } to { opacity: 0.5; } }
 
-        /* SVGs */
-        .kovu-svg { width: 35px; height: 35px; fill: #e74c3c; stroke: #1a1a2e; stroke-width: 1.5; }
-        .kovu-eye { fill: #00ffff; stroke: #00ffff; stroke-width: 0.5; }
-        .kovu-cybernetics { fill: none; stroke: #7f8c8d; stroke-width: 2; }
-        .dogen-svg { width: 38px; height: 38px; fill: #f1c40f; /* Yellow */ stroke: #1a1a2e; stroke-width: 1.5; }
-        .dogen-features { fill: #1a1a2e; }
-
         /* Target Zone Styling */
         .target-zone { position: absolute; border: 3px dashed #00ff00; border-radius: 50%; box-shadow: 0 0 15px rgba(0, 255, 0, 0.6); opacity: 0; pointer-events: none; transition: opacity 0.5s ease; z-index: 5; }
         .target-zone.active { opacity: 1; pointer-events: auto; }
@@ -262,10 +255,29 @@
         function playSound(type, note = null, duration = '8n') { if (!soundsReady || !synths[type]) return; try { if (type === 'feedbackNegative' || type === 'dash' || type === 'hazardWarn' || type === 'laserFire' || type === 'rivalDestroyed' || type === 'playerHit' || type === 'gameOver') { if (type === 'feedbackNegative') synths[type].triggerAttackRelease(duration); else if (type === 'dash') synths[type].triggerAttackRelease('C4', duration); else if (type === 'hazardWarn') synths[type].triggerAttackRelease('A4', '16n'); else if (type === 'laserFire') synths[type].triggerAttackRelease('G5', '16n'); else if (type === 'rivalDestroyed') synths[type].triggerAttackRelease(); else if (type === 'playerHit') synths[type].triggerAttackRelease('C3', '8n'); else if (type === 'gameOver') synths[type].triggerAttackRelease('C2', '1n'); } else if (note) { synths[type].triggerAttackRelease(note, duration); } } catch (error) { console.error(`Error playing sound ${type}:`, error); } }
 
         // --- Game Objects --- (Unchanged definitions)
-        const player = { /* ... Unchanged ... */ x: 50, y: 50, width: 35, height: 35, speed: 180, /* Base speed in pixels per second */ color: '#e74c3c', eyeColor: '#00ffff', isDashing: false, dashCooldown: 1500, lastDashTime: 0, dashDuration: 250, dashParticles: [], laserCooldown: 2000, lastLaserTime: 0, isFiringLaser: false, laserDuration: 150, laserRange: 300, laserWidth: 5, lastMoveDx: 1, lastMoveDy: 0, isInvulnerable: false, invulnerabilityDuration: 1000, lastHitTime: 0, svg: `<svg viewBox="0 0 100 100" class="kovu-svg" xmlns="http://www.w3.org/2000/svg"><path d="M50 10 C 25 10, 10 30, 10 55 S 25 100, 50 100 S 90 80, 90 55 S 75 10, 50 10 Z" /><path d="M30 25 L 20 5 L 40 15 Z" /><path d="M70 25 L 80 5 L 60 15 Z" /><path d="M40 65 Q 50 80, 60 65 Z" fill="#f8caca" /><circle cx="50" cy="68" r="4" fill="#333" /><circle cx="38" cy="45" r="5" fill="#fff"><animate attributeName="r" values="5;4;5" dur="1.5s" repeatCount="indefinite"/></circle><circle cx="38" cy="45" r="2.5" fill="#333"/><circle cx="62" cy="45" r="7" class="kovu-eye"/><circle cx="62" cy="45" r="3" fill="#fff"/><path d="M 62 45 L 75 35" class="kovu-cybernetics" /><path d="M 80 55 Q 75 65 70 60" class="kovu-cybernetics" /></svg>`, img: null };
+        const player = {
+            x: 50, y: 50, width: 56, height: 56, speed: 180, /* Base speed in pixels per second */
+            isDashing: false, dashCooldown: 1500, lastDashTime: 0, dashDuration: 250, dashParticles: [],
+            laserCooldown: 2000, lastLaserTime: 0, isFiringLaser: false, laserDuration: 150, laserRange: 300, laserWidth: 5,
+            lastMoveDx: 1, lastMoveDy: 0, isInvulnerable: false, invulnerabilityDuration: 1000, lastHitTime: 0,
+            img: null,
+            loadImage: async function() {
+                return new Promise((resolve) => {
+                    this.img = new Image();
+                    this.img.onload = () => resolve();
+                    this.img.onerror = () => {
+                        console.error("Failed to load player image");
+                        resolve();
+                    };
+                    this.img.src = 'k2.png';
+                });
+            }
+        };
+        // Initial image load
+        player.loadImage();
         const rivals = []; const rivalBaseSpeed = 60; /* Base speed in pixels per second */ const rivalHazardRadius = 50; const rivalHazardWarningDuration = 800; const rivalHazardActiveDuration = 1000;
-        const rivalSvg = `<svg viewBox="0 0 100 100" class="dogen-svg" xmlns="http://www.w3.org/2000/svg"><path d="M50 5 C 15 5, 5 35, 5 55 S 15 105, 50 105 S 95 75, 95 55 S 85 5, 50 5 Z" fill="#f1c40f"/><path d="M25 30 Q 10 10, 35 15 Z" fill="#f1c40f"/><path d="M75 30 Q 90 10, 65 15 Z" fill="#f1c40f"/><ellipse cx="35" cy="50" rx="6" ry="8" class="dogen-features"/><ellipse cx="65" cy="50" rx="6" ry="8" class="dogen-features"/><path d="M40 70 Q 50 85, 60 70 T 40 70" fill="#fff" stroke="#aaa" stroke-width="1"/><ellipse cx="50" cy="70" rx="5" ry="3" class="dogen-features"/></svg>`;
-        let rivalImg = null;
+        const rivalImg = new Image();
+        rivalImg.src = 'doge.png';
         const targetZone = { x: 600, y: 400, radius: 40, color: 'rgba(0, 255, 0, 0.3)', borderColor: '#00ff00', element: null };
         const collectibles = []; const collectibleRadius = 10; const collectibleWidth = 15; const collectibleHeight = 10;
         const particles = [];
@@ -712,7 +724,7 @@
             collectibles.forEach(collectible => { if (!collectible.collected) { const packetX = collectible.x - collectibleWidth / 2; const packetY = collectible.y - collectibleHeight / 2; ctx.fillStyle = '#00ffff'; ctx.fillRect(packetX, packetY, collectibleWidth, collectibleHeight); ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(packetX + 2, packetY + 2); ctx.lineTo(packetX + collectibleWidth - 2, packetY + 2); ctx.moveTo(packetX + 2, packetY + collectibleHeight / 2); ctx.lineTo(packetX + collectibleWidth - 2, packetY + collectibleHeight / 2); ctx.moveTo(packetX + 2, packetY + collectibleHeight - 2); ctx.lineTo(packetX + collectibleWidth - 2, packetY + collectibleHeight - 2); ctx.stroke(); ctx.shadowColor = 'rgba(0, 255, 255, 0.5)'; ctx.shadowBlur = 5; ctx.fillStyle = '#00ffff'; ctx.fillRect(packetX, packetY, collectibleWidth, collectibleHeight); ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; } });
             // Player (Unchanged)
             ctx.save(); if (player.isInvulnerable) { ctx.globalAlpha = (Math.floor(Date.now() / 100) % 2 === 0) ? 1.0 : 0.5; }
-            if (player.img) { ctx.drawImage(player.img, player.x, player.y, player.width, player.height); } else { ctx.fillStyle = player.color; ctx.fillRect(player.x, player.y, player.width, player.height); ctx.fillStyle = player.eyeColor; ctx.fillRect(player.x + player.width * 0.6, player.y + player.height * 0.3, 5, 5); }
+            ctx.drawImage(player.img, player.x, player.y, player.width, player.height);
             ctx.restore();
             // Dash Trail (Unchanged)
             player.dashParticles.forEach(p => { ctx.beginPath(); const alpha = (p.life / 20) * 0.5; ctx.fillStyle = `rgba(0, 255, 255, ${alpha})`; ctx.arc(p.x, p.y, player.width * 0.3 * (p.life / 20), 0, Math.PI * 2); ctx.fill(); });
