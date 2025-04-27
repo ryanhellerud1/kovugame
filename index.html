@@ -980,39 +980,45 @@
                 button.addEventListener('click', debouncedHandler);
             });
         }
+        // Add mobile audio initialization function
+        function initializeMobileAudio() {
+            return new Promise((resolve) => {
+                if (Tone.context.state !== 'running') {
+                    const audioButton = document.createElement('button');
+                    audioButton.style.position = 'absolute';
+                    audioButton.style.opacity = '0';
+                    audioButton.style.pointerEvents = 'none';
+                    document.body.appendChild(audioButton);
+                    
+                    audioButton.addEventListener('click', () => {
+                        Tone.start().then(() => {
+                            console.log("AudioContext started!");
+                            document.body.removeChild(audioButton);
+                            resolve(true);
+                        }).catch(e => {
+                            console.error("Tone.start() failed:", e);
+                            document.body.removeChild(audioButton);
+                            resolve(false);
+                        });
+                    });
+                    
+                    audioButton.click();
+                } else {
+                    resolve(true);
+                }
+            });
+        }
+
         function startGame() { 
             console.log("startGame function called"); 
             currentLevel = 1; 
             
-            // Handle audio context initialization with better mobile support
-            if (Tone.context.state !== 'running') {
-                // Create a temporary button to handle mobile audio context
-                const audioButton = document.createElement('button');
-                audioButton.style.position = 'absolute';
-                audioButton.style.opacity = '0';
-                audioButton.style.pointerEvents = 'none';
-                document.body.appendChild(audioButton);
-                
-                // Try to start audio context
-                audioButton.addEventListener('click', () => {
-                    Tone.start().then(() => {
-                        console.log("AudioContext started!");
-                        setupSounds();
-                        proceedWithGameStart();
-                        document.body.removeChild(audioButton);
-                    }).catch(e => {
-                        console.error("Tone.start() failed:", e);
-                        proceedWithGameStart();
-                        document.body.removeChild(audioButton);
-                    });
-                });
-                
-                // Programmatically click the button
-                audioButton.click();
-            } else {
-                if (!soundsReady) setupSounds();
+            initializeMobileAudio().then(audioStarted => {
+                if (audioStarted) {
+                    if (!soundsReady) setupSounds();
+                }
                 proceedWithGameStart();
-            }
+            });
         }
         function proceedWithGameStart() {
             console.log("Proceeding with game start...");
