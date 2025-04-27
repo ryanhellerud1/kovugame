@@ -608,8 +608,8 @@
                 rivals.push({
                     x: startX,
                     y: startY,
-                    width: window.innerWidth <= 768 ? 42 : 57,  // Smaller on mobile
-                    height: window.innerWidth <= 768 ? 42 : 57, // Smaller on mobile
+                    width: window.innerWidth <= 768 ? 85 : 57,  // 50% larger on mobile
+                    height: window.innerWidth <= 768 ? 85 : 57, // 50% larger on mobile
                     speed: speed,
                     direction: Math.random() < 0.5 ? 1 : -1,
                     patrolRange: patrolRange,
@@ -651,7 +651,7 @@
                 player.width = player.height = 64;
                 player.speed = 200;
                 rivals.forEach(rival => {
-                    rival.width = rival.height = 42;
+                    rival.width = rival.height = 85; // 50% larger on mobile
                 });
             } else {
                 player.width = player.height = 84;
@@ -1368,17 +1368,6 @@
                             if (rival.img.complete && rival.img.naturalWidth !== 0) {
                                 // Draw rival image
                                 ctx.drawImage(rival.img, rival.x, rival.y, rival.width, rival.height);
-                                
-                                // Add visual indicator for tappable area on mobile
-                                if (window.innerWidth <= 768) {
-                                    ctx.beginPath();
-                                    ctx.arc(rival.x + rival.width/2, rival.y + rival.height/2,
-                                          rival.width/2 + (window.innerWidth <= 768 ? 40 : 30),
-                                          0, Math.PI * 2);
-                                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-                                    ctx.lineWidth = 2;
-                                    ctx.stroke();
-                                }
                             } else {
                                 // Fallback while image is loading or if load failed
                                 ctx.fillStyle = '#f1c40f';
