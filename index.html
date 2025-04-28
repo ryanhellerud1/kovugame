@@ -2060,14 +2060,12 @@
              // --- Direct Skip Button Handling --- 
              const skipButton = document.getElementById('skip-intro-button');
              if (skipButton) {
-                 console.log("Adding skip button listener...");
-                 const handleSkip = (e) => {
-                     console.log(`Skip button event: ${e.type}`);
-                     e.preventDefault();
-                     e.stopPropagation();
-                     // e.stopImmediatePropagation(); // Temporarily remove to test
-
-                     console.log("handleSkip function entered.");
+                 console.log("Setting up skip button listeners...");
+                 
+                 // Define the core skip logic
+                 const executeSkip = (eventType) => {
+                     console.log(`Skip button event: ${eventType}`);
+                     console.log("executeSkip function entered.");
 
                      // Check if already processing
                      if (skipButton.dataset.processing === 'true') {
@@ -2100,16 +2098,39 @@
                      });
                  };
 
-                 // Remove potential old listeners first
-                 skipButton.removeEventListener('touchstart', handleSkip);
-                 skipButton.removeEventListener('click', handleSkip);
+                 // Listener for touchstart (mainly for preventDefault)
+                 const handleTouchStart = (e) => {
+                     console.log("Skip button touchstart");
+                     e.preventDefault(); // Prevent default actions and synthetic click
+                 };
 
-                 // Add listeners
-                 skipButton.addEventListener('touchstart', handleSkip, { passive: false });
+                 // Listener for touchend (trigger action)
+                 const handleTouchEnd = (e) => {
+                     console.log("Skip button touchend");
+                     // Make sure the touch didn't move significantly (optional, prevents trigger on scroll)
+                     // For simplicity, we'll skip the move check for now
+                     executeSkip(e.type);
+                 };
+                 
+                 // Listener for click (non-touch devices)
+                 const handleClick = (e) => {
+                    console.log("Skip button click");
+                    e.preventDefault(); // Good practice
+                    executeSkip(e.type);
+                 };
+
+                 // Remove potential old listeners first
+                 skipButton.removeEventListener('touchstart', handleTouchStart);
+                 skipButton.removeEventListener('touchend', handleTouchEnd);
+                 skipButton.removeEventListener('click', handleClick);
+
+                 // Add new listeners
+                 skipButton.addEventListener('touchstart', handleTouchStart, { passive: false });
+                 skipButton.addEventListener('touchend', handleTouchEnd, { passive: false }); // Use touchend for action
                  if (!('ontouchstart' in window)) {
-                     skipButton.addEventListener('click', handleSkip);
+                     skipButton.addEventListener('click', handleClick);
                  }
-                 console.log("Skip button listeners added.");
+                 console.log("Skip button listeners updated (touchstart/touchend/click).");
              } else {
                  console.error("Skip button not found!");
              }
