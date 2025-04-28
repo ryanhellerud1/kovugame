@@ -1160,10 +1160,7 @@
                 const handleSkip = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    e.stopImmediatePropagation(); // Prevent any other handlers
-                    
-                    // Immediately hide the button to prevent visual feedback
-                    skipButton.style.display = 'none';
+                    e.stopImmediatePropagation();
                     
                     console.log("Skipping intro and tutorial - Initializing Audio...");
                     // Initialize Audio on user interaction
@@ -1176,6 +1173,9 @@
                         introOverlay.style.display = 'none';
                         introOverlay.style.opacity = '0';
                         startGame();
+                        
+                        // Hide the button after game has started
+                        skipButton.style.display = 'none';
                     });
                 };
 
