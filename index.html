@@ -59,26 +59,27 @@
             display: block; 
         }
         /* Overlays */
-        #intro-overlay, #level-transition-overlay, #win-message, #game-over-overlay { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
+        #intro-overlay, #level-transition-overlay, #win-message, #game-over-overlay, #difficulty-select-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background-color: #000000; /* Changed from rgba(0, 0, 0, 0.85) to solid black */
-            color: white; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            text-align: center; 
-            z-index: 100; 
-            padding: 20px; 
-            border-radius: 10px; 
-            transition: opacity 0.5s ease; 
-            box-sizing: border-box; 
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 100;
+            padding: 20px;
+            border-radius: 10px;
+            transition: opacity 0.5s ease;
+            box-sizing: border-box;
         }
-        #intro-overlay { display: flex; opacity: 1; }
+        #intro-overlay { display: none; opacity: 0; } /* Initially hidden */
+        #difficulty-select-panel { display: flex; opacity: 1; } /* Initially shown */
         #level-transition-overlay, #win-message, #game-over-overlay { display: none; opacity: 0; }
         .intro-panel { display: none; width: 80%; max-width: 500px; }
         .intro-panel.active { display: block; }
@@ -144,6 +145,34 @@
         .feedback-message.fade-out { opacity: 0; transform: translateX(20px); }
         #level-transition-overlay h2, #win-message h2, #game-over-overlay h2 { font-size: 1.2rem; margin-bottom: 10px; }
         #level-transition-overlay p, #win-message p, #game-over-overlay p { font-size: 0.8rem; margin-bottom: 15px; }
+
+        /* Difficulty Select Specific Styles */
+        #difficulty-select-panel h2 {
+            font-size: 1.5rem; /* Larger title */
+            margin-bottom: 30px; /* More space below title */
+            color: #ff8c42; /* Use accent color */
+        }
+        #difficulty-select-panel .difficulty-buttons {
+            display: flex;
+            gap: 20px; /* Space between buttons */
+            margin-top: 20px;
+        }
+        #difficulty-select-panel button {
+            padding: 12px 25px; /* Slightly larger buttons */
+            font-size: 0.9rem;
+        }
+        #normal-mode-button {
+            background: linear-gradient(45deg, #1e90ff, #00ffff); /* Blue gradient */
+        }
+        #normal-mode-button:hover {
+            box-shadow: 0 6px 10px rgba(30, 144, 255, 0.5); /* Blue shadow */
+        }
+        #hard-mode-button {
+            background: linear-gradient(45deg, #dc3545, #ff6b6b); /* Red gradient */
+        }
+        #hard-mode-button:hover {
+            box-shadow: 0 6px 10px rgba(220, 53, 69, 0.5); /* Red shadow */
+        }
 
         /* Player Invulnerability Flash */
         .player-invulnerable { animation: flash-invulnerable 0.2s infinite alternate; }
@@ -312,6 +341,14 @@
 <body>
     <div id="game-wrapper">
         <div id="game-container">
+            <div id="difficulty-select-panel">
+                 <h2>Select Difficulty</h2>
+                 <p>Choose your challenge level!</p>
+                 <div class="difficulty-buttons">
+                     <button id="normal-mode-button" data-difficulty="normal">Normal Mode</button>
+                     <button id="hard-mode-button" data-difficulty="hard">Hard Mode</button>
+                 </div>
+             </div>
             <div id="intro-overlay">
                  <div class="intro-panel active" id="intro-1" data-panel="1">
                      <button id="skip-intro-button">Skip Intro & Tutorial</button>
@@ -428,14 +465,23 @@
         // let joystickMagnitude = 0; // No longer used for speed scaling
         let joystickDimensionsCalculated = false;
 
+        // --- Difficulty Setting ---
+        let gameDifficulty = 'normal'; // 'normal' or 'hard'
+        let difficultyMultiplier = 1; // For frequency adjustments
+        const HARD_MODE_DAMAGE_MULTIPLIER = 1.50; // Increased from 3.5
+        const HARD_MODE_FREQUENCY_MULTIPLIER = 1.0; // Increased from 2.0
+        const HARD_MODE_RIVAL_SPEED_BOOST = 2; // Increased from 1.25
+        const HARD_MODE_FUD_SPEED_MULTIPLIER = 2; // Added FUD speed multiplier for hard mode
+        const HARD_MODE_POSITIVE_APPROVAL_FACTOR = 1; // Reduced from 0.5
+
         // Delta Time variables
         let lastTimestamp = 0;
 
         // --- Level Configuration --- (Unchanged)
-        const levelConfigs = [ 
-            { level: 1, numRivals: 3, numCollectibles: 5, targetXRatio: 0.85, targetYRatio: 0.8, objectiveText: "Objective: Reach the Viral Stage!", rivalSpeedMultiplier: 1.0, rivalHazardCooldownBase: 3500 }, 
-            { level: 2, numRivals: 4, numCollectibles: 7, targetXRatio: 0.15, targetYRatio: 0.2, objectiveText: "Objective: Reach the Upload Point!", rivalSpeedMultiplier: 1.1, rivalHazardCooldownBase: 3000 }, 
-            { level: 3, numRivals: 5, numCollectibles: 8, targetXRatio: 0.5, targetYRatio: 0.15, objectiveText: "Objective: Secure the Data Core!", rivalSpeedMultiplier: 1.15, rivalHazardCooldownBase: 2800 }, 
+        const levelConfigs = [
+            { level: 1, numRivals: 3, numCollectibles: 5, targetXRatio: 0.85, targetYRatio: 0.8, objectiveText: "Objective: Reach the Viral Stage!", rivalSpeedMultiplier: 1.0, rivalHazardCooldownBase: 3500 },
+            { level: 2, numRivals: 4, numCollectibles: 7, targetXRatio: 0.15, targetYRatio: 0.2, objectiveText: "Objective: Reach the Upload Point!", rivalSpeedMultiplier: 1.1, rivalHazardCooldownBase: 3000 },
+            { level: 3, numRivals: 5, numCollectibles: 8, targetXRatio: 0.5, targetYRatio: 0.15, objectiveText: "Objective: Secure the Data Core!", rivalSpeedMultiplier: 1.15, rivalHazardCooldownBase: 2800 },
             { level: 4, numRivals: 6, numCollectibles: 10, targetXRatio: 0.8, targetYRatio: 0.2, objectiveText: "Objective: Final Broadcast Point!", rivalSpeedMultiplier: 1.2, rivalHazardCooldownBase: 2500 },
             { level: 5, numRivals: 7, numCollectibles: 12, targetXRatio: 0.2, targetYRatio: 0.1, objectiveText: "Objective: Elite Data Extraction!", rivalSpeedMultiplier: 1.3, rivalHazardCooldownBase: 2200 },
             { level: 6, numRivals: 8, numCollectibles: 15, targetXRatio: 0.7, targetYRatio: 0.1, objectiveText: "Objective: Ultimate Community Challenge!", rivalSpeedMultiplier: 1.4, rivalHazardCooldownBase: 2000 }
@@ -652,9 +698,10 @@
         const rivals = []; const rivalBaseSpeed = 60; /* Base speed in pixels per second */ const rivalHazardRadius = 50; const rivalHazardWarningDuration = 800; const rivalHazardActiveDuration = 1000;
         // Add FUD projectile system
         const fudProjectiles = [];
-        const fudProjectileSpeed = 100; // pixels per second
+        const BASE_FUD_PROJECTILE_SPEED = 120; // Increased from 100 pixels per second
         const fudProjectileSize = 20;
-        const fudProjectileDamage = 10; // 10% damage
+        const BASE_FUD_PROJECTILE_DAMAGE = 15; // Increased from 10 // Base 15% damage
+        const BASE_FUD_COOLDOWN = 3500; // Decreased from 5000 // Base cooldown in ms before random variation
 
         // Array of rival images
         const rivalImages = [
@@ -685,7 +732,17 @@
         const collectibleWidth = 20; // Increased width for coins
         const collectibleHeight = 20; // Increased height for coins
         const particles = [];
-        const feedbackMessages = [ /* ... Unchanged ... */ { trigger: 'dash', text: '#KovuBoost!', approval: 3, sound: 'dash' }, { trigger: 'halfway', text: 'Looking good! #Progress', approval: 5, sound: 'feedbackPositive', note: 'G4' }, { trigger: 'dodge', text: 'Nice dodge! #Skillz', approval: 4, sound: 'feedbackPositive', note: 'A4' }, { trigger: 'hazard_hit', text: 'Hazard Hit! Approval Lost!', approval: -15, sound: 'playerHit', negative: true }, { trigger: 'rival_collision', text: 'Collision! Ouch!', approval: -10, sound: 'playerHit', negative: true }, { trigger: 'collect', text: 'Collectible Coin! +Approval!', approval: 5, sound: 'collect', note: 'C5' }, { trigger: 'destroy_rival', text: 'Rival Deleted! #LaserFocus', approval: 10, sound: 'rivalDestroyed' }, { trigger: 'win', text: '#Victory! Community Morale Soaring!', approval: 20, sound: 'win', note: 'C5' }, { trigger: 'fud_hit', text: 'FUD Attack! -10% Approval!', approval: -10, sound: 'playerHit', negative: true } ];
+        const feedbackMessages = [
+            { trigger: 'dash', text: '#KovuBoost!', baseApproval: 3, sound: 'dash' },
+            { trigger: 'halfway', text: 'Looking good! #Progress', baseApproval: 5, sound: 'feedbackPositive', note: 'G4' },
+            { trigger: 'dodge', text: 'Nice dodge! #Skillz', baseApproval: 4, sound: 'feedbackPositive', note: 'A4' },
+            { trigger: 'hazard_hit', text: 'Hazard Hit! -{damage}% Approval!', baseApproval: -15, sound: 'playerHit', negative: true },
+            { trigger: 'rival_collision', text: 'Collision! Ouch! -{damage}% Approval!', baseApproval: -10, sound: 'playerHit', negative: true },
+            { trigger: 'collect', text: 'Collectible Coin! +Approval!', baseApproval: 5, sound: 'collect', note: 'C5' },
+            { trigger: 'destroy_rival', text: 'Rival Deleted! #LaserFocus', baseApproval: 10, sound: 'rivalDestroyed' },
+            { trigger: 'win', text: '#Victory! Community Morale Soaring!', baseApproval: 20, sound: 'win', note: 'C5' },
+            { trigger: 'fud_hit', text: 'FUD Attack! -{damage}% Approval!', baseApproval: -BASE_FUD_PROJECTILE_DAMAGE, sound: 'playerHit', negative: true }
+        ];
         let halfwayReached = false;
 
         // --- Initialization --- (Unchanged functions: loadSvg, createDisintegrationEffect)
@@ -935,7 +992,12 @@
         function updateObjectiveText() {
             const levelConf = levelConfigs[currentLevel - 1];
             const enemiesRemaining = rivals.filter(r => !r.isDestroyed).length;
-            const totalEnemies = levelConf.numRivals;
+            
+            // Calculate total enemies based on difficulty
+            let totalEnemies = levelConf.numRivals;
+            if (gameDifficulty === 'hard') {
+                totalEnemies *= 2;
+            }
             
             if (isTargetZoneActive) {
                 objectiveDisplay.textContent = levelConf.objectiveText;
@@ -946,7 +1008,7 @@
             // Update enemy count display
             const enemyCountElement = document.getElementById('enemy-count');
             if (enemyCountElement) {
-                enemyCountElement.textContent = `Enemies: ${totalEnemies - enemiesRemaining}/${totalEnemies}`;
+                enemyCountElement.textContent = `Enemies: ${enemiesRemaining}/${totalEnemies}`; // Adjusted from totalEnemies - enemiesRemaining
             }
         }
         async function setupGame(levelIndex) {
@@ -976,12 +1038,25 @@
             rivals.length = 0;
             document.querySelectorAll('.dogen-hazard').forEach(el => el.remove());
             particles.length = 0;
-            for (let i = 0; i < levelConf.numRivals; i++) {
+
+            // Determine the number of rivals based on difficulty
+            let numRivalsToSpawn = levelConf.numRivals;
+            if (gameDifficulty === 'hard') {
+                numRivalsToSpawn = Math.ceil(numRivalsToSpawn * 1.5);
+                console.log(`Hard Mode: Increasing rivals to ${numRivalsToSpawn}`);
+            }
+
+            for (let i = 0; i < numRivalsToSpawn; i++) { // Use numRivalsToSpawn here
                 const startX = canvasWidth * (0.5 + Math.random() * 0.3);
                 const startY = canvasHeight * (0.15 + Math.random() * 0.7);
                 const patrolRange = 70 + Math.random() * 60;
-                const speed = rivalBaseSpeed * levelConf.rivalSpeedMultiplier * (0.8 + Math.random() * 0.4);
-                const hazardCooldown = levelConf.rivalHazardCooldownBase;
+                // Calculate speed, adding hard mode boost
+                let speed = rivalBaseSpeed * levelConf.rivalSpeedMultiplier * (0.8 + Math.random() * 0.4);
+                if (gameDifficulty === 'hard') {
+                    speed *= HARD_MODE_RIVAL_SPEED_BOOST;
+                }
+                // Calculate hazard cooldown based on difficulty
+                const hazardCooldown = levelConf.rivalHazardCooldownBase / (gameDifficulty === 'hard' ? HARD_MODE_FREQUENCY_MULTIPLIER : 1.0);
                 const hazardRandomDelay = Math.random() * 1500;
                 const hazardElement = document.createElement('div');
                 hazardElement.className = 'dogen-hazard';
@@ -1004,9 +1079,9 @@
                     lastHazardTime: Date.now() - Math.random() * hazardCooldown + 2000, // Reduced initial delay to 2 seconds
                     hazardElement: hazardElement,
                     hazardFeedbackGiven: false,
-                    dodgeFeedbackGiven: false,
+                    dodgeFeedbackGiven: false, // Tracks if dodge feedback was given for a specific hazard activation
                     isDestroyed: false,
-                    hazardCooldown: hazardCooldown,
+                    hazardCooldown: hazardCooldown, // Store the calculated cooldown
                     hazardTimer: hazardCooldown + hazardRandomDelay + 2000, // Reduced initial delay to 2 seconds
                     hazardTargetX: 0,
                     hazardTargetY: 0,
@@ -1014,7 +1089,7 @@
                 });
             }
             updateObjectiveText(); // Initialize enemy count display
-            console.log(`Level ${levelConf.level}: Initialized Rivals Array:`, JSON.parse(JSON.stringify(rivals)));
+            console.log(`Level ${levelConf.level}: Initialized ${rivals.length} Rivals`); // Log actual spawned rivals
             if (!targetZone.element) {
                 targetZone.element = document.createElement('div');
                 targetZone.element.className = 'target-zone';
@@ -1486,8 +1561,25 @@
         }
 
         // --- Damage Application Function --- (Unchanged)
-        function applyDamage(type) {
+        function applyDamage(type, damageAmount) {
             if (player.isInvulnerable) return;
+
+            // Calculate actual damage based on difficulty
+            const feedbackData = feedbackMessages.find(m => m.trigger === type);
+            if (!feedbackData) return; // Should not happen
+
+            // Use provided damageAmount if available (for FUD), otherwise calculate from base
+            const baseDamage = feedbackData.baseApproval;
+            // Damage multiplier only applies to negative baseApproval values
+            const damageMultiplier = (gameDifficulty === 'hard' && baseDamage < 0) ? HARD_MODE_DAMAGE_MULTIPLIER : 1.0;
+            
+            // For FUD (type 'fud_hit'), use the passed damageAmount directly, but still apply multiplier if hard mode
+            // For other negative events, use baseApproval * multiplier
+            const calculatedDamage = (type === 'fud_hit' && damageAmount !== undefined)
+                                   ? Math.abs(damageAmount)
+                                   : Math.abs(baseDamage);
+
+            const actualDamage = calculatedDamage * damageMultiplier;
             
             // Set invulnerability state
             player.isInvulnerable = true;
@@ -1502,8 +1594,8 @@
                 }, player.invulnerabilityDuration);
             }
             
-            // Trigger feedback and sound
-            triggerFeedback(type);
+            // Trigger feedback and sound, passing the calculated actual damage
+            triggerFeedback(type, actualDamage);
             
             // Reset invulnerability after duration
             setTimeout(() => {
@@ -1625,7 +1717,10 @@
                 if (player.isDashing && rival.hazardActive) { const dx = (player.x + player.width / 2) - rival.hazardTargetX; const dy = (player.y + player.height / 2) - rival.hazardTargetY; const distance = Math.sqrt(dx * dx + dy * dy); if (distance < rivalHazardRadius + player.width * 1.5 && distance > rivalHazardRadius - player.width) { if (!rival.dodgeFeedbackGiven) { triggerFeedback('dodge'); rival.dodgeFeedbackGiven = true; setTimeout(() => { rival.dodgeFeedbackGiven = false; }, 500); } } }
 
                 // Add FUD shooting logic
-                if (!rival.lastFudShot || now - rival.lastFudShot > (5000 + Math.random() * 5000)) {
+                // Decreased base cooldown time and random variation range for hard mode
+                const fudCooldown = gameDifficulty === 'hard' ? (BASE_FUD_COOLDOWN / 1.5) : BASE_FUD_COOLDOWN;
+                const fudRandomVariation = gameDifficulty === 'hard' ? 2500 : 5000;
+                if (!rival.lastFudShot || now - rival.lastFudShot > (fudCooldown + Math.random() * fudRandomVariation)) {
                     shootFud(rival);
                     rival.lastFudShot = now;
                 }
@@ -1737,6 +1832,8 @@
 
             // Update FUD projectiles
             updateFudProjectiles(deltaTime);
+            // Check FUD hits against player
+            checkFudCollisions(deltaTime);
         }
 
         // --- Rendering ---
@@ -1993,7 +2090,55 @@
         }
 
         // --- Community Feedback --- (Unchanged)
-        function triggerFeedback(eventType) { const messageData = feedbackMessages.find(m => m.trigger === eventType); if (!messageData) return; const currentApproval = parseInt(approvalMeter.value); const newApproval = Math.max(0, currentApproval + messageData.approval); approvalMeter.value = newApproval; const msgElement = document.createElement('div'); msgElement.className = 'feedback-message'; if (messageData.negative) { msgElement.classList.add('negative'); } msgElement.textContent = messageData.text; feedbackArea.appendChild(msgElement); while (feedbackArea.children.length > 5) { feedbackArea.removeChild(feedbackArea.firstChild); } setTimeout(() => { msgElement.classList.add('fade-out'); msgElement.addEventListener('transitionend', () => { if (msgElement.parentElement === feedbackArea) { feedbackArea.removeChild(msgElement); } }, { once: true }); }, 2000); if (messageData.sound) { playSound(messageData.sound, messageData.note || null, '8n'); } if (newApproval <= 0 && gameState !== 'gameOver') { triggerGameOver(); } }
+        function triggerFeedback(eventType, damageValue = null) {
+            const messageData = feedbackMessages.find(m => m.trigger === eventType);
+            if (!messageData) return;
+
+            const currentApproval = parseInt(approvalMeter.value);
+            let approvalChange = 0;
+            let messageText = messageData.text;
+
+            // Calculate approval change and update message text if damage is involved
+            if (messageData.negative) {
+                // Use provided damageValue if available, otherwise calculate based on difficulty
+                const damage = damageValue !== null ? Math.abs(damageValue) : Math.abs(messageData.baseApproval * (gameDifficulty === 'hard' ? HARD_MODE_DAMAGE_MULTIPLIER : 1.0));
+                approvalChange = -Math.round(damage); // Ensure integer damage
+                messageText = messageData.text.replace('{damage}', Math.round(damage)); // Display rounded damage
+            } else {
+                // Positive changes ARE scaled (reduced) by difficulty in hard mode
+                const positiveMultiplier = gameDifficulty === 'hard' ? HARD_MODE_POSITIVE_APPROVAL_FACTOR : 1.0;
+                approvalChange = Math.round(messageData.baseApproval * positiveMultiplier);
+            }
+
+
+            const newApproval = Math.max(0, currentApproval + approvalChange);
+            approvalMeter.value = newApproval;
+
+            const msgElement = document.createElement('div');
+            msgElement.className = 'feedback-message';
+            if (messageData.negative) {
+                msgElement.classList.add('negative');
+            }
+            msgElement.textContent = messageText;
+            feedbackArea.appendChild(msgElement);
+            while (feedbackArea.children.length > 5) {
+                feedbackArea.removeChild(feedbackArea.firstChild);
+            }
+            setTimeout(() => {
+                msgElement.classList.add('fade-out');
+                msgElement.addEventListener('transitionend', () => {
+                    if (msgElement.parentElement === feedbackArea) {
+                        feedbackArea.removeChild(msgElement);
+                    }
+                }, { once: true });
+            }, 2000);
+            if (messageData.sound) {
+                playSound(messageData.sound, messageData.note || null, '8n');
+            }
+            if (newApproval <= 0 && gameState !== 'gameOver') {
+                triggerGameOver();
+            }
+        }
 
         // --- Game Loop (Delta Time Implementation) ---
         function gameLoop(timestamp) { // Receive timestamp
@@ -2041,92 +2186,37 @@
         // --- Initial Setup Call ---
         window.onload = async () => {
              console.log("Window loaded.");
-             gameState = 'intro';
-             
-             // Show loading state
-             introOverlay.style.display = 'flex';
-             introOverlay.style.opacity = '1';
-             document.getElementById('tutorial-overlay').style.display = 'none';
-             
-             try {
-                 // Preload all images before setup
-                 await preloadGameImages();
-                 console.log("Images preloaded successfully");
-                 
-                 // Initialize game setup after images are loaded
-                 await setupGame(currentLevel - 1);
-                 console.log("Initial game setup complete");
-             } catch (error) {
-                 console.error("Error during game initialization:", error);
-             }
-             
-             // Setup intro and tutorial handlers
-             setupIntroTouchHandlers();
-             setupTutorialHandlers();
-             console.log("Intro and tutorial handlers added.");
-             
-             // Add touch listeners after DOM is loaded
-             joystickArea.addEventListener('touchstart', (e) => { e.preventDefault(); joystickActive = true; joystickArea.classList.add('active'); const touch = e.changedTouches[0]; joystickStartX = touch.clientX; joystickStartY = touch.clientY; }, { passive: false });
-             joystickArea.addEventListener('touchmove', (e) => { e.preventDefault(); if (!joystickActive) return; if (!joystickDimensionsCalculated || maxJoystickDist <= 0) return; const touch = e.changedTouches[0]; const currentX = touch.clientX; const currentY = touch.clientY; const areaRect = joystickArea.getBoundingClientRect(); const areaCenterX = areaRect.left + areaRect.width / 2; const areaCenterY = areaRect.top + areaRect.height / 2; let dx = currentX - areaCenterX; let dy = currentY - areaCenterY; const dist = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxJoystickDist); const knobX = clampedDist * Math.cos(angle); const knobY = clampedDist * Math.sin(angle); joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`; const deadZone = maxJoystickDist * 0.15; if (clampedDist > deadZone) { const magnitude = Math.sqrt(dx * dx + dy * dy); joystickDx = dx / magnitude; joystickDy = dy / magnitude; /* joystickMagnitude removed */ } else { joystickDx = 0; joystickDy = 0; /* joystickMagnitude removed */ } }, { passive: false });
-             joystickArea.addEventListener('touchend', (e) => { e.preventDefault(); if (!joystickActive) return; joystickActive = false; joystickArea.classList.remove('active'); joystickKnob.style.transform = `translate(-50%, -50%)`; joystickDx = 0; joystickDy = 0; /* joystickMagnitude removed */ }, { passive: false });
-             // Add game area tap handler
-             gameContainer.addEventListener('touchstart', handleGameAreaTap, { passive: false });
-             console.log("Game area tap handler added.");
-             
-             // Add laser button handler
-             const laserButton = document.getElementById('laser-button');
-             laserButton.addEventListener('touchstart', (e) => {
-                 e.preventDefault();
-                 if (gameState === 'playing' && !player.isFiringLaser && Date.now() - player.lastLaserTime > player.laserCooldown) {
-                     fireLaser();
-                 }
-             }, { passive: false });
-             console.log("Laser button handler added.");
-             
-          
+             gameState = 'loading'; // Start in loading state
 
-             // Add restart button handler with both touch and click support
-             const restartButton = document.getElementById('restart-button');
-             if (restartButton) {
-                 const handleRestart = (e) => {
-                     e.preventDefault();
-                     startGame();
-                 };
-                 
-                 restartButton.addEventListener('touchstart', handleRestart, { passive: false });
-                 restartButton.addEventListener('click', handleRestart);
-                 console.log("Restart button handlers added.");
-             }
+             // Show difficulty selection panel first
+             const difficultyPanel = document.getElementById('difficulty-select-panel');
+             const introPanel = document.getElementById('intro-overlay');
+             const tutorialPanel = document.getElementById('tutorial-overlay');
+             difficultyPanel.style.display = 'flex';
+             difficultyPanel.style.opacity = '1';
+             introPanel.style.display = 'none';
+             introPanel.style.opacity = '0';
+             tutorialPanel.style.display = 'none';
 
-             // Add play again button handler
-             const playAgainButton = document.getElementById('play-again-button');
-             if (playAgainButton) {
-                 const handlePlayAgain = (e) => {
-                     e.preventDefault();
-                     restartGame();
-                 };
-                 
-                 playAgainButton.addEventListener('touchstart', handlePlayAgain, { passive: false });
-                 playAgainButton.addEventListener('click', handlePlayAgain);
-                 console.log("Play again button handlers added.");
-             }
+             // --- Difficulty Button Handlers ---
+             document.getElementById('normal-mode-button').addEventListener('click', () => selectDifficulty('normal'));
+             document.getElementById('hard-mode-button').addEventListener('click', () => selectDifficulty('hard'));
+             document.getElementById('normal-mode-button').addEventListener('touchstart', (e) => {e.preventDefault(); selectDifficulty('normal');}, { passive: false });
+             document.getElementById('hard-mode-button').addEventListener('touchstart', (e) => {e.preventDefault(); selectDifficulty('hard');}, { passive: false });
 
-             // --- Direct Skip Button Handling --- 
+             // --- Skip Button Handling (Sets Normal Difficulty) ---
              const skipButton = document.getElementById('skip-intro-button');
              if (skipButton) {
                  console.log("Setting up skip button listeners...");
-                 
-                 // Define the core skip logic
+
                  const executeSkip = (eventType) => {
                      console.log(`Skip button event: ${eventType}`);
-                     console.log("executeSkip function entered.");
+                     if (skipButton.dataset.processing === 'true') return;
+                     skipButton.dataset.processing = 'true';
 
-                     // Check if already processing
-                     if (skipButton.dataset.processing === 'true') {
-                         console.log("Skip already processing, ignoring event.");
-                         return;
-                     }
-                     skipButton.dataset.processing = 'true'; // Set processing flag
+                     // gameDifficulty = 'normal'; // REMOVED: Don't reset difficulty on skip
+                     // difficultyMultiplier = 1.0; // REMOVED: Don't reset multiplier on skip
+                     console.log("Skipping intro/tutorial. Current difficulty:", gameDifficulty);
 
                      console.log("Skipping intro and tutorial - Initializing Audio...");
                      initializeMobileAudio().then(audioStarted => {
@@ -2136,51 +2226,33 @@
                              setupSounds();
                          }
                          console.log("Hiding intro overlay...");
-                         introOverlay.style.display = 'none';
-                         introOverlay.style.opacity = '0';
+                         introPanel.style.display = 'none'; // Ensure intro is hidden
+                         introPanel.style.opacity = '0';
+                         difficultyPanel.style.display = 'none'; // Hide difficulty panel too
+                         difficultyPanel.style.opacity = '0';
                          console.log("Calling startGame()...");
-                         startGame();
-                         
+                         startGame(); // Start game directly
+
                          console.log("Hiding skip button...");
                          skipButton.style.display = 'none';
-                         
-                         // Reset processing flag after a short delay
+
                          setTimeout(() => { skipButton.dataset.processing = 'false'; }, 500);
                      }).catch(error => {
                          console.error("Error during skip initialization:", error);
-                         skipButton.dataset.processing = 'false'; // Reset flag on error
+                         skipButton.dataset.processing = 'false';
                      });
                  };
 
-                 // Listener for touchstart (mainly for preventDefault)
-                 const handleTouchStart = (e) => {
-                     console.log("Skip button touchstart");
-                     e.preventDefault(); // Prevent default actions and synthetic click
-                 };
+                 const handleTouchStart = (e) => { e.preventDefault(); };
+                 const handleTouchEnd = (e) => { executeSkip(e.type); };
+                 const handleClick = (e) => { e.preventDefault(); executeSkip(e.type); };
 
-                 // Listener for touchend (trigger action)
-                 const handleTouchEnd = (e) => {
-                     console.log("Skip button touchend");
-                     // Make sure the touch didn't move significantly (optional, prevents trigger on scroll)
-                     // For simplicity, we'll skip the move check for now
-                     executeSkip(e.type);
-                 };
-                 
-                 // Listener for click (non-touch devices)
-                 const handleClick = (e) => {
-                    console.log("Skip button click");
-                    e.preventDefault(); // Good practice
-                    executeSkip(e.type);
-                 };
-
-                 // Remove potential old listeners first
                  skipButton.removeEventListener('touchstart', handleTouchStart);
                  skipButton.removeEventListener('touchend', handleTouchEnd);
                  skipButton.removeEventListener('click', handleClick);
 
-                 // Add new listeners
                  skipButton.addEventListener('touchstart', handleTouchStart, { passive: false });
-                 skipButton.addEventListener('touchend', handleTouchEnd, { passive: false }); // Use touchend for action
+                 skipButton.addEventListener('touchend', handleTouchEnd, { passive: false });
                  if (!('ontouchstart' in window)) {
                      skipButton.addEventListener('click', handleClick);
                  }
@@ -2188,12 +2260,124 @@
              } else {
                  console.error("Skip button not found!");
              }
-             // --- End Direct Skip Button Handling ---
         };
+
+        async function selectDifficulty(difficulty) {
+            console.log("Difficulty selected:", difficulty);
+            gameDifficulty = difficulty;
+            // This multiplier is now specifically for frequency
+            difficultyMultiplier = (gameDifficulty === 'hard' ? HARD_MODE_FREQUENCY_MULTIPLIER : 1.0);
+            console.log("Frequency Multiplier set to:", difficultyMultiplier);
+
+            // Add logging for hard mode selection
+            if (gameDifficulty === 'hard') {
+                console.log("Hard mode has been enabled.");
+            }
+
+            const difficultyPanel = document.getElementById('difficulty-select-panel');
+            const introPanel = document.getElementById('intro-overlay');
+
+            // Hide difficulty panel and show intro panel 1
+            difficultyPanel.style.opacity = '0';
+            setTimeout(() => {
+                difficultyPanel.style.display = 'none';
+
+                // Show the intro overlay container itself
+                introPanel.style.display = 'flex';
+                introPanel.offsetHeight; // Trigger reflow
+                introPanel.style.opacity = '1';
+
+                // Ensure the first intro panel inside is active and visible
+                showIntroPanel(1); // Activate the first *story* panel
+
+                // Now that a difficulty is chosen, proceed with preloading and setup
+                initializeGameAssetsAndSetup();
+
+            }, 300); // Match transition duration
+        }
+
+        async function initializeGameAssetsAndSetup() {
+             console.log("Initializing game assets and setup...");
+             gameState = 'loading'; // Set state while loading
+
+             try {
+                 await preloadGameImages();
+                 console.log("Images preloaded successfully");
+
+                 await setupGame(currentLevel - 1); // Initial setup uses currentLevel (starts at 1)
+                 console.log("Initial game setup complete");
+
+                 // Setup intro/tutorial AFTER setup is done
+                 setupIntroTouchHandlers(); // Make sure intro panel 1 buttons work
+                 setupTutorialHandlers();
+                 console.log("Intro and tutorial handlers added.");
+
+                 // Add necessary game event listeners ONLY AFTER setup
+                 addGameEventListeners();
+
+                 gameState = 'intro'; // Ready for intro sequence (or tutorial/game start)
+
+             } catch (error) {
+                 console.error("Error during game initialization:", error);
+                 // Handle initialization error (e.g., display an error message)
+                 gameState = 'error';
+             }
+        }
+
+        function addGameEventListeners() {
+            console.log("Adding game event listeners...");
+            // Joystick
+            joystickArea.removeEventListener('touchstart', handleJoystickStart);
+            joystickArea.removeEventListener('touchmove', handleJoystickMove);
+            joystickArea.removeEventListener('touchend', handleJoystickEnd);
+            joystickArea.addEventListener('touchstart', handleJoystickStart, { passive: false });
+            joystickArea.addEventListener('touchmove', handleJoystickMove, { passive: false });
+            joystickArea.addEventListener('touchend', handleJoystickEnd, { passive: false });
+
+            // Game Area Tap (Dash/Targeted Laser)
+            gameContainer.removeEventListener('touchstart', handleGameAreaTap);
+            gameContainer.addEventListener('touchstart', handleGameAreaTap, { passive: false });
+
+            // Laser Button
+            const laserButton = document.getElementById('laser-button');
+            laserButton.removeEventListener('touchstart', handleLaserButton);
+            laserButton.addEventListener('touchstart', handleLaserButton, { passive: false });
+
+            // Restart Button
+            const restartButton = document.getElementById('restart-button');
+            if (restartButton) {
+                restartButton.removeEventListener('touchstart', handleRestart);
+                restartButton.removeEventListener('click', handleRestart);
+                restartButton.addEventListener('touchstart', handleRestart, { passive: false });
+                restartButton.addEventListener('click', handleRestart);
+            }
+
+            // Play Again Button
+            const playAgainButton = document.getElementById('play-again-button');
+            if (playAgainButton) {
+                playAgainButton.removeEventListener('touchstart', handlePlayAgain);
+                playAgainButton.removeEventListener('click', handlePlayAgain);
+                playAgainButton.addEventListener('touchstart', handlePlayAgain, { passive: false });
+                playAgainButton.addEventListener('click', handlePlayAgain);
+            }
+            console.log("Game event listeners added.");
+        }
+
+        // --- Extracted Event Handler Functions ---
+        function handleJoystickStart(e) { e.preventDefault(); joystickActive = true; joystickArea.classList.add('active'); const touch = e.changedTouches[0]; joystickStartX = touch.clientX; joystickStartY = touch.clientY; }
+        function handleJoystickMove(e) { e.preventDefault(); if (!joystickActive) return; if (!joystickDimensionsCalculated || maxJoystickDist <= 0) return; const touch = e.changedTouches[0]; const currentX = touch.clientX; const currentY = touch.clientY; const areaRect = joystickArea.getBoundingClientRect(); const areaCenterX = areaRect.left + areaRect.width / 2; const areaCenterY = areaRect.top + areaRect.height / 2; let dx = currentX - areaCenterX; let dy = currentY - areaCenterY; const dist = Math.sqrt(dx * dx + dy * dy); const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxJoystickDist); const knobX = clampedDist * Math.cos(angle); const knobY = clampedDist * Math.sin(angle); joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`; const deadZone = maxJoystickDist * 0.15; if (clampedDist > deadZone) { const magnitude = Math.sqrt(dx * dx + dy * dy); joystickDx = dx / magnitude; joystickDy = dy / magnitude; /* joystickMagnitude removed */ } else { joystickDx = 0; joystickDy = 0; /* joystickMagnitude removed */ } }
+        function handleJoystickEnd(e) { e.preventDefault(); if (!joystickActive) return; joystickActive = false; joystickArea.classList.remove('active'); joystickKnob.style.transform = `translate(-50%, -50%)`; joystickDx = 0; joystickDy = 0; /* joystickMagnitude removed */ }
+        function handleLaserButton(e) { e.preventDefault(); if (gameState === 'playing' && !player.isFiringLaser && Date.now() - player.lastLaserTime > player.laserCooldown) { fireLaser(); } }
+        function handleRestart(e) { e.preventDefault(); startGame(); }
+        function handlePlayAgain(e) { e.preventDefault(); restartGame(); }
+        // handleGameAreaTap remains as is
+
+        // --- End Extracted Event Handler Functions ---
+
 
         function showTutorialPanel(panelNumber) {
             console.log("Transitioning to tutorial panel:", panelNumber);
-            
+
             const tutorialOverlay = document.getElementById('tutorial-overlay');
             const currentPanel = document.querySelector('.tutorial-panel.active');
             const nextPanel = document.querySelector(`.tutorial-panel[data-panel="${panelNumber}"]`);
@@ -2325,7 +2509,7 @@
                     if (distance < player.width / 2 + fudProjectileSize / 2) {
                         // Apply damage
                         const currentApproval = parseInt(approvalMeter.value);
-                        const newApproval = Math.max(0, currentApproval - fudProjectileDamage);
+                        const newApproval = Math.max(0, currentApproval - BASE_FUD_PROJECTILE_DAMAGE);
                         approvalMeter.value = newApproval;
                         
                         // Trigger feedback
@@ -2358,8 +2542,8 @@
             const distance = Math.sqrt(dx * dx + dy * dy);
             
             // Normalize direction
-            const vx = (dx / distance) * fudProjectileSpeed;
-            const vy = (dy / distance) * fudProjectileSpeed;
+            const vx = (dx / distance) * BASE_FUD_PROJECTILE_SPEED;
+            const vy = (dy / distance) * BASE_FUD_PROJECTILE_SPEED;
             
             // Create projectile
             fudProjectiles.push({
@@ -2371,6 +2555,38 @@
             
             // Play sound
             playSound('laserFire');
+        }
+
+        // Check FUD hits against player
+        function checkFudCollisions(deltaTime) {
+            for (let i = fudProjectiles.length - 1; i >= 0; i--) {
+                const projectile = fudProjectiles[i];
+                
+                // Check collision with player
+                if (!player.isInvulnerable) {
+                    const dx = (player.x + player.width / 2) - projectile.x;
+                    const dy = (player.y + player.height / 2) - projectile.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < player.width / 2 + fudProjectileSize / 2) {
+                        // Apply damage
+                        const currentApproval = parseInt(approvalMeter.value);
+                        const newApproval = Math.max(0, currentApproval - BASE_FUD_PROJECTILE_DAMAGE);
+                        approvalMeter.value = newApproval;
+                        
+                        // Trigger feedback
+                        triggerFeedback('fud_hit');
+                        
+                        // Remove projectile
+                        fudProjectiles.splice(i, 1);
+                        
+                        // Check for game over
+                        if (newApproval <= 0 && gameState !== 'gameOver') {
+                            triggerGameOver();
+                        }
+                    }
+                }
+            }
         }
 
     </script>
