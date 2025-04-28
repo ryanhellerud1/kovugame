@@ -392,7 +392,7 @@
             <div id="tutorial-overlay" style="display: none;">
                 <div class="tutorial-panel" id="tutorial-1" data-panel="1">
                     <h2>Welcome to the Arena!</h2>
-                    <p>Your goal is to collect collectible coins while avoiding hazards and rivals.</p>
+                    <p>Your goal is to collect coins and destroy rivals while avoiding hazards.</p>
                     <div class="hazard-demo" style="top: 30%; left: 50%; transform: translate(-50%, -50%);"></div>
                     <p>Watch out for red hazard zones! They'll drain your approval rating.</p>
                     <button data-next="2">Next</button>
@@ -401,13 +401,12 @@
                     <h2>Controls</h2>
                     <p>Use the joystick or arrow keys to move.</p>
                     <p>Tap the screen or press SPACE to dash away from danger.</p>
-                    <p>Use the laser button or press E to destroy rivals.</p>
+                    <p>Use the red laser button or press E to destroy rivals.</p>
                     <button data-next="3">Next</button>
                 </div>
                 <div class="tutorial-panel" id="tutorial-3" data-panel="3">
                     <h2>Gameplay Tips</h2>
-                    <p>Collect all collectible coins to activate the target zone.</p>
-                    <p>Destroy rivals to clear your path.</p>
+                    <p>Collect all coins and destroy all rivals to activate the target zone.</p>
                     <p>Keep your approval rating above zero!</p>
                     <button data-next="start">Begin!</button>
                 </div>
@@ -421,8 +420,8 @@
                  </div>
                  <div id="ui-right">
                       <div id="approval-meter-container"> Community Approval: <progress id="approval-meter" value="10" max="100"></progress> </div>
-                      <div id="objective-display">Objective: Collect Data! (0/0)</div>
-                      <div id="enemy-count">Enemies: 0/0</div>
+                      <div id="objective-display">Objective: Collect Coins! (0/0)</div>
+                      <div id="enemy-count">Enemies destroyed: 0/0</div>
                  </div>
             </div>
             <div id="feedback-area"></div>
