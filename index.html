@@ -1032,14 +1032,14 @@
             if (isTargetZoneActive) {
                 objectiveDisplay.textContent = levelConf.objectiveText;
             } else {
-                objectiveDisplay.textContent = `Collect Data! (${collectiblesCollected}/${totalCollectibles})`;
+                objectiveDisplay.textContent = `Collect Coins! (${collectiblesCollected}/${totalCollectibles})`;
             }
             
             // Update enemy count display
             const enemyCountElement = document.getElementById('enemy-count');
             if (enemyCountElement) {
                 // Display destroyed count / total count
-                enemyCountElement.textContent = `Enemies: ${enemiesDestroyed}/${totalEnemies}`;
+                enemyCountElement.textContent = `Enemies destroyed: ${enemiesDestroyed}/${totalEnemies}`;
             }
         }
         async function setupGame(levelIndex) {
