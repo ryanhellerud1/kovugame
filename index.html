@@ -735,9 +735,10 @@
             for (let i = 0; i < totalCollectibles; i++) {
                 let placed = false;
                 let attempts = 0;
+                let maxAttempts = allGridPositions.length * 2; // Allow more attempts
                 
-                while (!placed && attempts < allGridPositions.length) {
-                    const gridPos = allGridPositions[attempts];
+                while (!placed && attempts < maxAttempts) {
+                    const gridPos = allGridPositions[attempts % allGridPositions.length];
                     const cellKey = `${gridPos.x},${gridPos.y}`;
                     
                     // Skip if cell already used
@@ -803,7 +804,7 @@
                             Math.pow(potentialX - c.x, 2) + 
                             Math.pow(potentialY - c.y, 2)
                         );
-                        if (distToCollectible < collectibleRadius * 3) {
+                        if (distToCollectible < collectibleRadius * 2.5) { // Reduced from 3 to 2.5
                             tooCloseToCollectible = true;
                             break;
                         }
@@ -833,7 +834,7 @@
                 }
                 
                 if (!placed) {
-                    console.warn(`Could not place collectible ${i + 1} after trying all positions.`);
+                    console.warn(`Could not place collectible ${i + 1} after ${maxAttempts} attempts.`);
                 }
             }
             
