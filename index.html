@@ -139,6 +139,7 @@
         #approval-meter::-webkit-progress-bar { background-color: #333; border-radius: 3px; }
         #approval-meter::-webkit-progress-value { background: linear-gradient(90deg, #1e90ff, #00ffff); border-radius: 0px; transition: width 0.3s ease; }
         #approval-meter::-moz-progress-bar { background: linear-gradient(90deg, #1e90ff, #00ffff); border-radius: 3px; transition: width 0.3s ease; }
+        #dash-cooldown-display { background-color: rgba(0, 0, 0, 0.5); padding: 4px 8px; border-radius: 5px; pointer-events: auto; } /* Style for Dash Cooldown */
         #feedback-area { position: absolute; bottom: 5px; right: 5px; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; z-index: 50; max-height: 60px; overflow: hidden; }
         .feedback-message { background-color: rgba(74, 74, 138, 0.8); color: white; padding: 3px 6px; border-radius: 4px; margin-top: 4px; font-size: 0.5rem; opacity: 1; transition: opacity 1s ease-out, transform 0.5s ease-out; transform: translateX(0); }
         .feedback-message.negative { background-color: rgba(200, 0, 0, 0.8); }
@@ -405,10 +406,13 @@
             </div>
             <canvas id="gameCanvas"></canvas>
             <div id="ui-container">
-                 <div id="ui-left"> <div id="kcc-status">🔴<span>OFFLINE</span></div>
+                 <div id="ui-left">
+                      <div id="kcc-status">🔴<span>OFFLINE</span></div>
                       <div id="level-indicator">Level: 1</div>
+                      <div id="dash-cooldown-display">Dash: READY</div> <!-- Added Dash Cooldown Display -->
                  </div>
-                 <div id="ui-right"> <div id="approval-meter-container"> Community Approval: <progress id="approval-meter" value="10" max="100"></progress> </div>
+                 <div id="ui-right">
+                      <div id="approval-meter-container"> Community Approval: <progress id="approval-meter" value="10" max="100"></progress> </div>
                       <div id="objective-display">Objective: Collect Data! (0/0)</div>
                       <div id="enemy-count">Enemies: 0/0</div>
                  </div>
@@ -446,6 +450,7 @@
         const approvalMeter = document.getElementById('approval-meter');
         const feedbackArea = document.getElementById('feedback-area');
         const levelIndicator = document.getElementById('level-indicator');
+        const dashCooldownDisplay = document.getElementById('dash-cooldown-display'); // Get reference to the new element
         // Joystick Elements
         const joystickArea = document.getElementById('joystick-area');
         const joystickKnob = document.getElementById('joystick-knob');
@@ -686,7 +691,7 @@
             width: IS_MOBILE ? 64 : 84, // Adjusted size based on IS_MOBILE
             height: IS_MOBILE ? 64 : 84, // Adjusted size based on IS_MOBILE
             speed: IS_MOBILE ? 200 : 180, // Adjusted speed based on IS_MOBILE
-            isDashing: false, dashCooldown: 1500, lastDashTime: 0, dashDuration: 250, dashParticles: [],
+            isDashing: false, dashCooldown: 1125, lastDashTime: 0, dashDuration: 250, dashParticles: [],
             laserCooldown: 1000, lastLaserTime: 0, isFiringLaser: false, laserDuration: 150, laserRange: 300, laserWidth: 5,
             lastMoveDx: 1, lastMoveDy: 0, isInvulnerable: false, invulnerabilityDuration: 1000, lastHitTime: 0,
             img: null,
@@ -1002,12 +1007,14 @@
         }
         function updateObjectiveText() {
             const levelConf = levelConfigs[currentLevel - 1];
-            const enemiesRemaining = rivals.filter(r => !r.isDestroyed).length;
+            // Calculate destroyed enemies instead of remaining
+            const enemiesDestroyed = rivals.filter(r => r.isDestroyed).length;
             
-            // Calculate total enemies based on difficulty
+            // Calculate total enemies based on difficulty and device, mirroring setupGame
             let totalEnemies = levelConf.numRivals;
             if (gameDifficulty === 'hard') {
-                totalEnemies *= 2;
+                const hardModeMultiplier = IS_MOBILE ? 1.15 : 1.3; // Use the same logic as setupGame
+                totalEnemies = Math.ceil(totalEnemies * hardModeMultiplier);
             }
             
             if (isTargetZoneActive) {
@@ -1019,7 +1026,8 @@
             // Update enemy count display
             const enemyCountElement = document.getElementById('enemy-count');
             if (enemyCountElement) {
-                enemyCountElement.textContent = `Enemies: ${enemiesRemaining}/${totalEnemies}`; // Adjusted from totalEnemies - enemiesRemaining
+                // Display destroyed count / total count
+                enemyCountElement.textContent = `Enemies: ${enemiesDestroyed}/${totalEnemies}`;
             }
         }
         async function setupGame(levelIndex) {
@@ -2193,6 +2201,17 @@
             if (gameState === 'playing') {
                 update(deltaTime); // Pass deltaTime to update
                 draw();
+
+                // Update Dash Cooldown UI
+                const now = Date.now();
+                const timeSinceLastDash = now - player.lastDashTime;
+                if (timeSinceLastDash < player.dashCooldown) {
+                    const remainingTime = (player.dashCooldown - timeSinceLastDash) / 1000;
+                    dashCooldownDisplay.textContent = `Dash: ${remainingTime.toFixed(1)}s`;
+                } else {
+                    dashCooldownDisplay.textContent = 'Dash: READY';
+                }
+
                 animationFrameId = requestAnimationFrame(gameLoop);
             } else {
                 console.log("Game loop paused - state:", gameState);
