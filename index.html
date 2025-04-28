@@ -1050,16 +1050,9 @@
                     });
                 };
 
-                let isHandlingSkip = false;
-                const debouncedSkipHandler = (e) => {
-                    if (isHandlingSkip) return;
-                    isHandlingSkip = true;
-                    handleSkip(e);
-                    setTimeout(() => { isHandlingSkip = false; }, 300);
-                };
-
-                skipButton.addEventListener('touchstart', debouncedSkipHandler, { passive: false });
-                skipButton.addEventListener('click', debouncedSkipHandler);
+                // Simplified event handling for mobile
+                skipButton.addEventListener('touchstart', handleSkip, { passive: false });
+                skipButton.addEventListener('click', handleSkip);
             }
         }
         // Add mobile audio initialization function
