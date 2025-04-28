@@ -1503,7 +1503,10 @@
                         levelTransitionOverlay.style.opacity = 1;
                         kccStatusElement.innerHTML = '🔴<span>OFFLINE</span>';
                         kccStatusElement.classList.remove('live');
-                        setTimeout(() => {
+                        
+                        // Add click/tap handler to level transition overlay
+                        const handleLevelTransitionClick = (e) => {
+                            e.preventDefault();
                             levelTransitionOverlay.style.display = 'none';
                             levelTransitionOverlay.style.opacity = 0;
                             currentLevel++;
@@ -1514,7 +1517,13 @@
                                 kccStatusElement.classList.add('live');
                                 gameLoop();
                             });
-                        }, 2500);
+                            // Remove the event listener after use
+                            levelTransitionOverlay.removeEventListener('touchstart', handleLevelTransitionClick);
+                            levelTransitionOverlay.removeEventListener('click', handleLevelTransitionClick);
+                        };
+                        
+                        levelTransitionOverlay.addEventListener('touchstart', handleLevelTransitionClick, { passive: false });
+                        levelTransitionOverlay.addEventListener('click', handleLevelTransitionClick);
                     } else {
                         gameState = 'win';
                         triggerFeedback('win');
