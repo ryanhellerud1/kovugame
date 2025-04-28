@@ -698,15 +698,38 @@
                 { x: canvasWidth * 0.7, y: canvasHeight - 100, width: canvasWidth * 0.3, height: 100 }
             ];
 
-            const topMargin = 40;
-            const bottomMargin = isMobile ? 150 : 50; // Increased bottom margin for mobile
+            // Define safe margins from edges
+            const topMargin = 60; // Increased from 40
+            const bottomMargin = isMobile ? 180 : 80; // Increased margins
+            const sideMargin = 40; // New side margin
+
+            // Create a grid system for more even distribution
+            const gridCols = 8;
+            const gridRows = 6;
+            const cellWidth = (canvasWidth - 2 * sideMargin) / gridCols;
+            const cellHeight = (canvasHeight - topMargin - bottomMargin) / gridRows;
+
+            // Track used grid cells to prevent clustering
+            const usedCells = new Set();
+
             for (let i = 0; i < totalCollectibles; i++) {
                 let placed = false;
                 let attempts = 0;
+                
                 while (!placed && attempts < 100) {
                     attempts++;
-                    const potentialX = collectibleRadius + Math.random() * (canvasWidth - collectibleRadius * 2);
-                    const potentialY = topMargin + Math.random() * (canvasHeight - topMargin - bottomMargin);
+                    
+                    // Select a random grid cell
+                    const gridX = Math.floor(Math.random() * gridCols);
+                    const gridY = Math.floor(Math.random() * gridRows);
+                    const cellKey = `${gridX},${gridY}`;
+                    
+                    // Skip if cell already used
+                    if (usedCells.has(cellKey)) continue;
+                    
+                    // Calculate potential position within the cell
+                    const potentialX = sideMargin + gridX * cellWidth + Math.random() * cellWidth;
+                    const potentialY = topMargin + gridY * cellHeight + Math.random() * cellHeight;
                     
                     // Skip if in UI-safe zones
                     let inUISafeZone = false;
@@ -720,41 +743,73 @@
                         }
                     }
                     if (inUISafeZone) continue;
-
-                    if (potentialY < topMargin || potentialY > canvasHeight - bottomMargin) continue;
                     
-                    const distToPlayerStart = Math.sqrt(Math.pow(potentialX - canvasWidth / 4, 2) + Math.pow(potentialY - canvasHeight / 2, 2));
-                    const distToTarget = Math.sqrt(Math.pow(potentialX - targetZone.x, 2) + Math.pow(potentialY - targetZone.y, 2));
+                    // Check minimum distance from player start
+                    const distToPlayerStart = Math.sqrt(
+                        Math.pow(potentialX - canvasWidth / 4, 2) + 
+                        Math.pow(potentialY - canvasHeight / 2, 2)
+                    );
                     
-                    let tooCloseToRivalStart = false;
-                    for(const r of rivals) {
+                    // Check minimum distance from target zone
+                    const distToTarget = Math.sqrt(
+                        Math.pow(potentialX - targetZone.x, 2) + 
+                        Math.pow(potentialY - targetZone.y, 2)
+                    );
+                    
+                    // Check minimum distance from rivals
+                    let tooCloseToRival = false;
+                    for (const r of rivals) {
                         if (!r.isDestroyed) {
-                            const distToRival = Math.sqrt(Math.pow(potentialX - r.startX, 2) + Math.pow(potentialY - r.startY, 2));
+                            const distToRival = Math.sqrt(
+                                Math.pow(potentialX - r.startX, 2) + 
+                                Math.pow(potentialY - r.startY, 2)
+                            );
                             if (distToRival < r.width * 2) {
-                                tooCloseToRivalStart = true;
+                                tooCloseToRival = true;
                                 break;
                             }
                         }
                     }
                     
+                    // Check minimum distance from other collectibles
+                    let tooCloseToCollectible = false;
+                    for (const c of collectibles) {
+                        const distToCollectible = Math.sqrt(
+                            Math.pow(potentialX - c.x, 2) + 
+                            Math.pow(potentialY - c.y, 2)
+                        );
+                        if (distToCollectible < collectibleRadius * 4) {
+                            tooCloseToCollectible = true;
+                            break;
+                        }
+                    }
+                    
                     if (distToPlayerStart > player.width * 2 && 
                         distToTarget > targetZone.radius * 1.5 && 
-                        !tooCloseToRivalStart) {
+                        !tooCloseToRival && 
+                        !tooCloseToCollectible) {
+                        
                         collectibles.push({
                             x: potentialX,
                             y: potentialY,
                             radius: collectibleRadius,
                             collected: false,
-                            rotation: 0, // Add rotation property
-                            rotationSpeed: 0.05 + Math.random() * 0.05, // Random rotation speed
-                            bobOffset: Math.random() * Math.PI * 2, // Random starting position for bobbing
-                            bobSpeed: 0.05 + Math.random() * 0.05 // Random bobbing speed
+                            rotation: 0,
+                            rotationSpeed: 0.05 + Math.random() * 0.05,
+                            bobOffset: Math.random() * Math.PI * 2,
+                            bobSpeed: 0.05 + Math.random() * 0.05
                         });
+                        
+                        usedCells.add(cellKey);
                         placed = true;
                     }
                 }
-                if (attempts >= 100) console.warn("Could not place all collectibles easily.");
+                
+                if (attempts >= 100) {
+                    console.warn(`Could not place collectible ${i + 1} after 100 attempts.`);
+                }
             }
+            
             console.log(`Level ${levelConf.level}: Spawned ${collectibles.length} Collectibles`);
             updateObjectiveText();
         }
