@@ -146,6 +146,14 @@
         .feedback-message.fade-out { opacity: 0; transform: translateX(20px); }
         #level-transition-overlay h2, #win-message h2, #game-over-overlay h2 { font-size: 1.2rem; margin-bottom: 10px; }
         #level-transition-overlay p, #win-message p, #game-over-overlay p { font-size: 0.8rem; margin-bottom: 15px; }
+        #win-message img {
+            max-width: 80%; /* Limit image width */
+            max-height: 50vh; /* Limit image height */
+            margin: 15px auto; /* Center and add margin */
+            border: 2px solid #00ffff; /* Cyan border */
+            border-radius: 8px;
+            display: block; /* Ensure it behaves like a block element */
+        }
 
         /* Difficulty Select Specific Styles */
         #difficulty-select-panel h2 {
@@ -418,7 +426,12 @@
                  </div>
             </div>
             <div id="feedback-area"></div>
-            <div id="win-message"> <h2>All Levels Complete!</h2> <p>#KovuWins! The Community is ecstatic!</p> <button id="play-again-button">Play Again?</button> </div>
+            <div id="win-message">
+                 <h2>The crypto memeverse was dominated!</h2>
+                 <img src="finalform.jpg" alt="Kovu Final Form" onerror="this.onerror=null; this.src='https://placehold.co/300x150/1a1a2e/00ffff?text=Final+Form'"> <!-- Added final form image -->
+                 <p>#KovuWins! The Community  is ecstatic! Follow @kovupupai for more!</p>
+                 <button id="play-again-button">Play Again?</button>
+            </div>
 
             <div id="mobile-tutorial">Tap on screen to dash</div>
 
