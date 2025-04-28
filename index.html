@@ -707,9 +707,9 @@
             const playableWidth = canvasWidth - (2 * sideMargin);
             const playableHeight = canvasHeight - topMargin - bottomMargin;
 
-            // Adjust grid size based on screen size
-            const gridCols = isMobile ? 6 : 8; // Fewer columns on mobile
-            const gridRows = isMobile ? 4 : 6; // Fewer rows on mobile
+            // Adjust grid size based on screen size and number of collectibles
+            const gridCols = isMobile ? 6 : 8;
+            const gridRows = isMobile ? 4 : 6;
             
             const cellWidth = playableWidth / gridCols;
             const cellHeight = playableHeight / gridRows;
@@ -717,35 +717,41 @@
             // Track used grid cells to prevent clustering
             const usedCells = new Set();
 
+            // Create a list of all possible grid positions
+            const allGridPositions = [];
+            for (let x = 0; x < gridCols; x++) {
+                for (let y = 0; y < gridRows; y++) {
+                    allGridPositions.push({ x, y });
+                }
+            }
+
+            // Shuffle the grid positions
+            for (let i = allGridPositions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [allGridPositions[i], allGridPositions[j]] = [allGridPositions[j], allGridPositions[i]];
+            }
+
+            // Try to place collectibles in shuffled positions
             for (let i = 0; i < totalCollectibles; i++) {
                 let placed = false;
                 let attempts = 0;
                 
-                while (!placed && attempts < 100) {
-                    attempts++;
-                    
-                    // Select a random grid cell
-                    const gridX = Math.floor(Math.random() * gridCols);
-                    const gridY = Math.floor(Math.random() * gridRows);
-                    const cellKey = `${gridX},${gridY}`;
+                while (!placed && attempts < allGridPositions.length) {
+                    const gridPos = allGridPositions[attempts];
+                    const cellKey = `${gridPos.x},${gridPos.y}`;
                     
                     // Skip if cell already used
-                    if (usedCells.has(cellKey)) continue;
-                    
-                    // Calculate potential position within the cell with safety margin
-                    const cellMargin = collectibleRadius * 2; // Safety margin within cell
-                    const potentialX = sideMargin + gridX * cellWidth + cellMargin + 
-                                     Math.random() * (cellWidth - 2 * cellMargin);
-                    const potentialY = topMargin + gridY * cellHeight + cellMargin + 
-                                     Math.random() * (cellHeight - 2 * cellMargin);
-                    
-                    // Ensure position is within bounds
-                    if (potentialX < sideMargin || 
-                        potentialX > canvasWidth - sideMargin || 
-                        potentialY < topMargin || 
-                        potentialY > canvasHeight - bottomMargin) {
+                    if (usedCells.has(cellKey)) {
+                        attempts++;
                         continue;
                     }
+                    
+                    // Calculate potential position within the cell
+                    const cellMargin = collectibleRadius;
+                    const potentialX = sideMargin + gridPos.x * cellWidth + cellMargin + 
+                                     Math.random() * (cellWidth - 2 * cellMargin);
+                    const potentialY = topMargin + gridPos.y * cellHeight + cellMargin + 
+                                     Math.random() * (cellHeight - 2 * cellMargin);
                     
                     // Skip if in UI-safe zones
                     let inUISafeZone = false;
@@ -758,7 +764,10 @@
                             break;
                         }
                     }
-                    if (inUISafeZone) continue;
+                    if (inUISafeZone) {
+                        attempts++;
+                        continue;
+                    }
                     
                     // Check minimum distance from player start
                     const distToPlayerStart = Math.sqrt(
@@ -794,7 +803,7 @@
                             Math.pow(potentialX - c.x, 2) + 
                             Math.pow(potentialY - c.y, 2)
                         );
-                        if (distToCollectible < collectibleRadius * 4) {
+                        if (distToCollectible < collectibleRadius * 3) {
                             tooCloseToCollectible = true;
                             break;
                         }
@@ -819,10 +828,12 @@
                         usedCells.add(cellKey);
                         placed = true;
                     }
+                    
+                    attempts++;
                 }
                 
-                if (attempts >= 100) {
-                    console.warn(`Could not place collectible ${i + 1} after 100 attempts.`);
+                if (!placed) {
+                    console.warn(`Could not place collectible ${i + 1} after trying all positions.`);
                 }
             }
             
