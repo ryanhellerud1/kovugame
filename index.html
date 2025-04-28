@@ -674,45 +674,56 @@
             collectiblesCollected = 0;
             isTargetZoneActive = false;
 
-            // Check if we're on mobile
-            const isMobile = window.innerWidth <= 768;
+            // Check if we're on mobile more reliably
+            const isMobile = window.innerWidth <= 768 && window.innerHeight > window.innerWidth; // Check aspect ratio too
+
+            console.log(`Spawning for ${isMobile ? 'Mobile' : 'Desktop'}`);
+            console.log(`Canvas dimensions: ${canvasWidth}x${canvasHeight}`);
 
             // Define UI-safe zones where collectibles cannot spawn
             const uiSafeZones = isMobile ? [
-                // Mobile layout
-                // Top UI area (level indicator and KCC status)
-                { x: 0, y: 0, width: canvasWidth * 0.3, height: 50 },
-                // Right UI area (approval meter, objective, enemy count)
-                { x: canvasWidth * 0.7, y: 0, width: canvasWidth * 0.3, height: 100 },
-                // Bottom touch controls area
-                { x: 0, y: canvasHeight - 150, width: canvasWidth, height: 150 },
-                // Bottom feedback area
-                { x: canvasWidth * 0.7, y: canvasHeight - 100, width: canvasWidth * 0.3, height: 100 }
+                // Mobile layout (Adjusted)
+                { x: 0, y: 0, width: canvasWidth * 0.35, height: 60 }, // Top-left UI
+                { x: canvasWidth * 0.65, y: 0, width: canvasWidth * 0.35, height: 110 }, // Top-right UI (slightly larger)
+                { x: 0, y: canvasHeight - 160, width: canvasWidth, height: 160 }, // Bottom controls/feedback (Adjusted height)
             ] : [
                 // Desktop layout
-                // Top UI area (level indicator and KCC status)
                 { x: 0, y: 0, width: canvasWidth * 0.3, height: 50 },
-                // Right UI area (approval meter, objective, enemy count)
                 { x: canvasWidth * 0.7, y: 0, width: canvasWidth * 0.3, height: 100 },
-                // Bottom feedback area
-                { x: canvasWidth * 0.7, y: canvasHeight - 100, width: canvasWidth * 0.3, height: 100 }
+                { x: canvasWidth * 0.7, y: canvasHeight - 100, width: canvasWidth * 0.3, height: 100 } // Bottom feedback area
             ];
 
-            // Define safe margins from edges
+            // Define safe margins from edges (Adjusted mobile bottom margin)
             const topMargin = 60;
-            const bottomMargin = isMobile ? 180 : 80;
-            const sideMargin = 40;
+            const bottomMargin = isMobile ? 160 : 80; // Reduced mobile bottom margin
+            const sideMargin = 30; // Slightly reduced side margin
 
             // Calculate playable area
             const playableWidth = canvasWidth - (2 * sideMargin);
             const playableHeight = canvasHeight - topMargin - bottomMargin;
 
+            console.log(`Playable area: ${playableWidth}x${playableHeight} (Top: ${topMargin}, Bottom: ${bottomMargin}, Side: ${sideMargin})`);
+
+            // Check if playable area is valid
+            if (playableWidth <= 0 || playableHeight <= 0) {
+                console.error("Invalid playable area calculated. Aborting spawn.");
+                return;
+            }
+
             // Adjust grid size based on screen size and number of collectibles
-            const gridCols = isMobile ? 6 : 8;
-            const gridRows = isMobile ? 4 : 6;
-            
+            // Increased mobile grid density slightly
+            const gridCols = isMobile ? 7 : 8;
+            const gridRows = isMobile ? 5 : 6;
+
             const cellWidth = playableWidth / gridCols;
             const cellHeight = playableHeight / gridRows;
+
+            console.log(`Grid: ${gridCols}x${gridRows}, Cell: ${cellWidth.toFixed(2)}x${cellHeight.toFixed(2)}`);
+
+            // Ensure cell size is viable
+            if (cellWidth < collectibleRadius * 2 || cellHeight < collectibleRadius * 2) {
+                 console.warn(`Cell size (${cellWidth.toFixed(2)}x${cellHeight.toFixed(2)}) might be too small for collectibles (radius: ${collectibleRadius}). Spawning might fail.`);
+            }
 
             // Track used grid cells to prevent clustering
             const usedCells = new Set();
@@ -721,7 +732,29 @@
             const allGridPositions = [];
             for (let x = 0; x < gridCols; x++) {
                 for (let y = 0; y < gridRows; y++) {
-                    allGridPositions.push({ x, y });
+                    // Pre-calculate cell boundaries for checks
+                    const cellStartX = sideMargin + x * cellWidth;
+                    const cellStartY = topMargin + y * cellHeight;
+                    const cellEndX = cellStartX + cellWidth;
+                    const cellEndY = cellStartY + cellHeight;
+
+                    // Basic check if the cell itself overlaps significantly with UI zones
+                    let cellOverlapsUI = false;
+                    for (const zone of uiSafeZones) {
+                        // Check for overlap rectangle
+                        const xOverlap = Math.max(0, Math.min(cellEndX, zone.x + zone.width) - Math.max(cellStartX, zone.x));
+                        const yOverlap = Math.max(0, Math.min(cellEndY, zone.y + zone.height) - Math.max(cellStartY, zone.y));
+                        if (xOverlap * yOverlap > (cellWidth * cellHeight * 0.5)) { // If more than 50% overlap
+                            cellOverlapsUI = true;
+                            break;
+                        }
+                    }
+
+                    if (!cellOverlapsUI) {
+                         allGridPositions.push({ x, y });
+                    } else {
+                        console.log(`Skipping grid cell ${x},${y} due to significant UI overlap.`);
+                    }
                 }
             }
 
@@ -731,66 +764,87 @@
                 [allGridPositions[i], allGridPositions[j]] = [allGridPositions[j], allGridPositions[i]];
             }
 
+            console.log(`Total available grid positions after UI check: ${allGridPositions.length}`);
+            if (allGridPositions.length < totalCollectibles) {
+                console.warn(`Not enough available grid cells (${allGridPositions.length}) to place all collectibles (${totalCollectibles}).`);
+            }
+
             // Try to place collectibles in shuffled positions
+            let placedCount = 0;
             for (let i = 0; i < totalCollectibles; i++) {
                 let placed = false;
                 let attempts = 0;
-                let maxAttempts = allGridPositions.length * 2; // Allow more attempts
-                
-                while (!placed && attempts < maxAttempts) {
-                    const gridPos = allGridPositions[attempts % allGridPositions.length];
+                // Allow more attempts, especially if grid is constrained
+                let maxAttempts = Math.max(allGridPositions.length * 3, 50);
+
+                while (!placed && attempts < maxAttempts && allGridPositions.length > 0) {
+                    // Cycle through available positions
+                    const gridIndex = attempts % allGridPositions.length;
+                    const gridPos = allGridPositions[gridIndex];
                     const cellKey = `${gridPos.x},${gridPos.y}`;
-                    
-                    // Skip if cell already used
-                    if (usedCells.has(cellKey)) {
-                        attempts++;
-                        continue;
-                    }
-                    
-                    // Calculate potential position within the cell
-                    const cellMargin = collectibleRadius;
-                    const potentialX = sideMargin + gridPos.x * cellWidth + cellMargin + 
-                                     Math.random() * (cellWidth - 2 * cellMargin);
-                    const potentialY = topMargin + gridPos.y * cellHeight + cellMargin + 
-                                     Math.random() * (cellHeight - 2 * cellMargin);
-                    
-                    // Skip if in UI-safe zones
+
+                    // Calculate potential position within the cell (with slightly more padding)
+                    const cellPadding = collectibleRadius * 1.2; // Use padding instead of just radius
+                    const randomOffsetX = Math.random() * (cellWidth - 2 * cellPadding);
+                    const randomOffsetY = Math.random() * (cellHeight - 2 * cellPadding);
+
+                    const potentialX = sideMargin + gridPos.x * cellWidth + cellPadding + randomOffsetX;
+                    const potentialY = topMargin + gridPos.y * cellHeight + cellPadding + randomOffsetY;
+
+                     // Boundary checks (ensure within canvas)
+                     if (potentialX < collectibleRadius || potentialX > canvasWidth - collectibleRadius ||
+                         potentialY < collectibleRadius || potentialY > canvasHeight - collectibleRadius) {
+                         if (isMobile) console.log(`Attempt ${attempts + 1}: Placement (${potentialX.toFixed(0)}, ${potentialY.toFixed(0)}) failed: Out of bounds.`);
+                         attempts++;
+                         continue;
+                     }
+
+                    // Skip if in UI-safe zones (redundant check, but safer)
                     let inUISafeZone = false;
                     for (const zone of uiSafeZones) {
-                        if (potentialX >= zone.x && 
-                            potentialX <= zone.x + zone.width && 
-                            potentialY >= zone.y && 
-                            potentialY <= zone.y + zone.height) {
+                        if (potentialX >= zone.x && potentialX <= zone.x + zone.width &&
+                            potentialY >= zone.y && potentialY <= zone.y + zone.height) {
                             inUISafeZone = true;
                             break;
                         }
                     }
                     if (inUISafeZone) {
+                        if (isMobile) console.log(`Attempt ${attempts + 1}: Placement (${potentialX.toFixed(0)}, ${potentialY.toFixed(0)}) failed: In UI zone.`);
                         attempts++;
                         continue;
                     }
-                    
+
                     // Check minimum distance from player start
                     const distToPlayerStart = Math.sqrt(
-                        Math.pow(potentialX - canvasWidth / 4, 2) + 
+                        Math.pow(potentialX - canvasWidth / 4, 2) +
                         Math.pow(potentialY - canvasHeight / 2, 2)
                     );
-                    
+                    if (distToPlayerStart <= player.width * 2) {
+                         if (isMobile) console.log(`Attempt ${attempts + 1}: Placement (${potentialX.toFixed(0)}, ${potentialY.toFixed(0)}) failed: Too close to player start.`);
+                         attempts++;
+                         continue;
+                    }
+
                     // Check minimum distance from target zone
                     const distToTarget = Math.sqrt(
-                        Math.pow(potentialX - targetZone.x, 2) + 
+                        Math.pow(potentialX - targetZone.x, 2) +
                         Math.pow(potentialY - targetZone.y, 2)
                     );
-                    
-                    // Check minimum distance from rivals
+                     if (distToTarget <= targetZone.radius * 1.5) {
+                         if (isMobile) console.log(`Attempt ${attempts + 1}: Placement (${potentialX.toFixed(0)}, ${potentialY.toFixed(0)}) failed: Too close to target.`);
+                         attempts++;
+                         continue;
+                     }
+
+                    // Check minimum distance from rivals' start positions
                     let tooCloseToRival = false;
                     for (const r of rivals) {
                         if (!r.isDestroyed) {
                             const distToRival = Math.sqrt(
-                                Math.pow(potentialX - r.startX, 2) + 
+                                Math.pow(potentialX - r.startX, 2) +
                                 Math.pow(potentialY - r.startY, 2)
                             );
-                            if (distToRival < r.width * 2) {
+                            if (distToRival < r.width * 2) { // Use rival start position for consistency
                                 tooCloseToRival = true;
                                 break;
                             }
