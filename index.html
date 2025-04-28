@@ -699,15 +699,20 @@
             ];
 
             // Define safe margins from edges
-            const topMargin = 60; // Increased from 40
-            const bottomMargin = isMobile ? 180 : 80; // Increased margins
-            const sideMargin = 40; // New side margin
+            const topMargin = 60;
+            const bottomMargin = isMobile ? 180 : 80;
+            const sideMargin = 40;
 
-            // Create a grid system for more even distribution
-            const gridCols = 8;
-            const gridRows = 6;
-            const cellWidth = (canvasWidth - 2 * sideMargin) / gridCols;
-            const cellHeight = (canvasHeight - topMargin - bottomMargin) / gridRows;
+            // Calculate playable area
+            const playableWidth = canvasWidth - (2 * sideMargin);
+            const playableHeight = canvasHeight - topMargin - bottomMargin;
+
+            // Adjust grid size based on screen size
+            const gridCols = isMobile ? 6 : 8; // Fewer columns on mobile
+            const gridRows = isMobile ? 4 : 6; // Fewer rows on mobile
+            
+            const cellWidth = playableWidth / gridCols;
+            const cellHeight = playableHeight / gridRows;
 
             // Track used grid cells to prevent clustering
             const usedCells = new Set();
@@ -727,9 +732,20 @@
                     // Skip if cell already used
                     if (usedCells.has(cellKey)) continue;
                     
-                    // Calculate potential position within the cell
-                    const potentialX = sideMargin + gridX * cellWidth + Math.random() * cellWidth;
-                    const potentialY = topMargin + gridY * cellHeight + Math.random() * cellHeight;
+                    // Calculate potential position within the cell with safety margin
+                    const cellMargin = collectibleRadius * 2; // Safety margin within cell
+                    const potentialX = sideMargin + gridX * cellWidth + cellMargin + 
+                                     Math.random() * (cellWidth - 2 * cellMargin);
+                    const potentialY = topMargin + gridY * cellHeight + cellMargin + 
+                                     Math.random() * (cellHeight - 2 * cellMargin);
+                    
+                    // Ensure position is within bounds
+                    if (potentialX < sideMargin || 
+                        potentialX > canvasWidth - sideMargin || 
+                        potentialY < topMargin || 
+                        potentialY > canvasHeight - bottomMargin) {
+                        continue;
+                    }
                     
                     // Skip if in UI-safe zones
                     let inUISafeZone = false;
@@ -1091,6 +1107,7 @@
             if (skipButton) {
                 const handleSkip = (e) => {
                     e.preventDefault();
+                    e.stopPropagation(); // Prevent event bubbling
                     console.log("Skipping intro and tutorial - Initializing Audio...");
                     // Initialize Audio on user interaction
                     initializeMobileAudio().then(audioStarted => {
@@ -1105,7 +1122,11 @@
                     });
                 };
 
-                // Simplified event handling for mobile
+                // Remove any existing event listeners
+                skipButton.removeEventListener('touchstart', handleSkip);
+                skipButton.removeEventListener('click', handleSkip);
+                
+                // Add new event listeners with passive: false
                 skipButton.addEventListener('touchstart', handleSkip, { passive: false });
                 skipButton.addEventListener('click', handleSkip);
             }
