@@ -2056,6 +2056,64 @@
                  playAgainButton.addEventListener('click', handlePlayAgain);
                  console.log("Play again button handlers added.");
              }
+
+             // --- Direct Skip Button Handling --- 
+             const skipButton = document.getElementById('skip-intro-button');
+             if (skipButton) {
+                 console.log("Adding skip button listener...");
+                 const handleSkip = (e) => {
+                     console.log(`Skip button event: ${e.type}`);
+                     e.preventDefault();
+                     e.stopPropagation();
+                     // e.stopImmediatePropagation(); // Temporarily remove to test
+
+                     console.log("handleSkip function entered.");
+
+                     // Check if already processing
+                     if (skipButton.dataset.processing === 'true') {
+                         console.log("Skip already processing, ignoring event.");
+                         return;
+                     }
+                     skipButton.dataset.processing = 'true'; // Set processing flag
+
+                     console.log("Skipping intro and tutorial - Initializing Audio...");
+                     initializeMobileAudio().then(audioStarted => {
+                         console.log("initializeMobileAudio promise resolved.");
+                         if (audioStarted && !soundsReady) {
+                             console.log("Setting up sounds after skip...");
+                             setupSounds();
+                         }
+                         console.log("Hiding intro overlay...");
+                         introOverlay.style.display = 'none';
+                         introOverlay.style.opacity = '0';
+                         console.log("Calling startGame()...");
+                         startGame();
+                         
+                         console.log("Hiding skip button...");
+                         skipButton.style.display = 'none';
+                         
+                         // Reset processing flag after a short delay
+                         setTimeout(() => { skipButton.dataset.processing = 'false'; }, 500);
+                     }).catch(error => {
+                         console.error("Error during skip initialization:", error);
+                         skipButton.dataset.processing = 'false'; // Reset flag on error
+                     });
+                 };
+
+                 // Remove potential old listeners first
+                 skipButton.removeEventListener('touchstart', handleSkip);
+                 skipButton.removeEventListener('click', handleSkip);
+
+                 // Add listeners
+                 skipButton.addEventListener('touchstart', handleSkip, { passive: false });
+                 if (!('ontouchstart' in window)) {
+                     skipButton.addEventListener('click', handleSkip);
+                 }
+                 console.log("Skip button listeners added.");
+             } else {
+                 console.error("Skip button not found!");
+             }
+             // --- End Direct Skip Button Handling ---
         };
 
         function showTutorialPanel(panelNumber) {
