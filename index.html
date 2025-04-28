@@ -465,6 +465,9 @@
         // let joystickMagnitude = 0; // No longer used for speed scaling
         let joystickDimensionsCalculated = false;
 
+        // --- Mobile Check ---
+        const IS_MOBILE = window.innerWidth <= 768; // Added constant for mobile check
+
         // --- Difficulty Setting ---
         let gameDifficulty = 'normal'; // 'normal' or 'hard'
         let difficultyMultiplier = 1; // For frequency adjustments
@@ -674,9 +677,9 @@
         // --- Game Objects --- (Unchanged definitions)
         const player = {
             x: 50, y: 50,
-            width: window.innerWidth <= 768 ? 84 : 84, // 30% larger on mobile (64 * 1.3 ≈ 84)
-            height: window.innerWidth <= 768 ? 84 : 84, // 30% larger on mobile (64 * 1.3 ≈ 84)
-            speed: window.innerWidth <= 768 ? 200 : 180, /* Slightly faster on mobile for better control */
+            width: IS_MOBILE ? 64 : 84, // Adjusted size based on IS_MOBILE
+            height: IS_MOBILE ? 64 : 84, // Adjusted size based on IS_MOBILE
+            speed: IS_MOBILE ? 200 : 180, // Adjusted speed based on IS_MOBILE
             isDashing: false, dashCooldown: 1500, lastDashTime: 0, dashDuration: 250, dashParticles: [],
             laserCooldown: 1000, lastLaserTime: 0, isFiringLaser: false, laserDuration: 150, laserRange: 300, laserWidth: 5,
             lastMoveDx: 1, lastMoveDy: 0, isInvulnerable: false, invulnerabilityDuration: 1000, lastHitTime: 0,
@@ -747,15 +750,17 @@
 
         // --- Initialization --- (Unchanged functions: loadSvg, createDisintegrationEffect)
         function loadSvg(svgString, width, height) { return new Promise((resolve) => { const blob = new Blob([svgString], { type: 'image/svg+xml' }); const url = URL.createObjectURL(blob); const img = new Image(); img.onload = () => { URL.revokeObjectURL(url); resolve(img); }; img.onerror = () => { console.error("Failed to load SVG image"); resolve(null); }; img.width = width; img.height = height; img.src = url; }); }
-        function createDisintegrationEffect(x, y, count = 30) { // Reduced particle count
+        function createDisintegrationEffect(x, y, count = 30) { // Reduced particle count default slightly
                             // Simple burst effect without shadows
                             ctx.beginPath();
                             ctx.arc(x, y, 30, 0, Math.PI * 2);
                             ctx.fillStyle = 'rgba(255, 200, 50, 0.4)';
                             ctx.fill();
         
-                            // Single wave of optimized particles
-                            const maxParticles = Math.min(count, 30); // Cap maximum particles
+                            // Further reduce particles on mobile
+                            const baseParticleCount = IS_MOBILE ? 15 : 25; // Reduced base counts
+                            const maxParticles = Math.min(count, baseParticleCount); // Cap maximum particles
+
                             for (let i = 0; i < maxParticles; i++) {
                                 const angle = Math.random() * Math.PI * 2;
                                 const speed = Math.random() * 4 + 2;
@@ -1038,12 +1043,15 @@
             rivals.length = 0;
             document.querySelectorAll('.dogen-hazard').forEach(el => el.remove());
             particles.length = 0;
+            fudProjectiles.length = 0; // Clear FUD projectiles too
 
-            // Determine the number of rivals based on difficulty
+            // Determine the number of rivals based on difficulty and device
             let numRivalsToSpawn = levelConf.numRivals;
             if (gameDifficulty === 'hard') {
-                numRivalsToSpawn = Math.ceil(numRivalsToSpawn * 1.3);
-                console.log(`Hard Mode: Increasing rivals to ${numRivalsToSpawn}`);
+                // Apply a smaller increase on mobile
+                const hardModeMultiplier = IS_MOBILE ? 1.15 : 1.3; // Reduced mobile increase from 1.3 to 1.15
+                numRivalsToSpawn = Math.ceil(numRivalsToSpawn * hardModeMultiplier);
+                console.log(`Hard Mode (${IS_MOBILE ? 'Mobile' : 'Desktop'}): Increasing rivals to ${numRivalsToSpawn}`);
             }
 
             for (let i = 0; i < numRivalsToSpawn; i++) { // Use numRivalsToSpawn here
@@ -1066,8 +1074,8 @@
                 rivals.push({
                     x: startX,
                     y: startY,
-                    width: window.innerWidth <= 768 ? 68 : 57,  // 20% smaller than previous mobile size
-                    height: window.innerWidth <= 768 ? 68 : 57, // 20% smaller than previous mobile size
+                    width: IS_MOBILE ? 54 : 57,  // Adjusted size based on IS_MOBILE (smaller mobile)
+                    height: IS_MOBILE ? 54 : 57, // Adjusted size based on IS_MOBILE (smaller mobile)
                     speed: speed,
                     direction: Math.random() < 0.5 ? 1 : -1,
                     patrolRange: patrolRange,
@@ -1106,23 +1114,20 @@
         }
         window.addEventListener('resize', () => {
             // Update dimensions for mobile/desktop
-            if (window.innerWidth <= 768) {
-                player.width = player.height = 64;
-                player.speed = 200;
-                rivals.forEach(rival => {
-                    rival.width = rival.height = 68; // 20% smaller than previous mobile size
-                });
-            } else {
-                player.width = player.height = 84;
-                player.speed = 180;
-                rivals.forEach(rival => {
-                    rival.width = rival.height = 57;
-                });
-            }
+            // No longer need player/rival size updates here, done via IS_MOBILE constant at definition
             
-            // Reload game setup
+            // Reload game setup if playing
             if (gameState === 'playing' || gameState === 'level_transition') {
+                console.log("Resizing, reloading game setup...");
                 setupGame(currentLevel - 1);
+            } else {
+                // If not playing, just update canvas dimensions for potential later start
+                canvasWidth = gameContainer.clientWidth;
+                canvasHeight = gameContainer.clientHeight;
+                canvas.width = canvasWidth;
+                canvas.height = canvasHeight;
+                 // Recalculate joystick dimensions if needed
+                joystickDimensionsCalculated = false;
             }
         });
 
@@ -1665,7 +1670,10 @@
                   const boostSpeed = player.speed * 2.0; // Pixels per second boost
                   player.x += moveX * boostSpeed * deltaTime;
                   player.y += moveY * boostSpeed * deltaTime;
-                  player.dashParticles.push({ x: player.x + player.width / 2, y: player.y + player.height / 2, life: 20 });
+                  // Reduce dash particles on mobile
+                  if (!IS_MOBILE || Math.random() < 0.5) { // Spawn particles less often on mobile
+                      player.dashParticles.push({ x: player.x + player.width / 2, y: player.y + player.height / 2, life: IS_MOBILE ? 15 : 20 }); // Shorter life on mobile
+                  }
             }
 
 
@@ -1717,9 +1725,13 @@
                 if (player.isDashing && rival.hazardActive) { const dx = (player.x + player.width / 2) - rival.hazardTargetX; const dy = (player.y + player.height / 2) - rival.hazardTargetY; const distance = Math.sqrt(dx * dx + dy * dy); if (distance < rivalHazardRadius + player.width * 1.5 && distance > rivalHazardRadius - player.width) { if (!rival.dodgeFeedbackGiven) { triggerFeedback('dodge'); rival.dodgeFeedbackGiven = true; setTimeout(() => { rival.dodgeFeedbackGiven = false; }, 500); } } }
 
                 // Add FUD shooting logic
-                // Decreased base cooldown time and random variation range for hard mode
-                const fudCooldown = gameDifficulty === 'hard' ? (BASE_FUD_COOLDOWN / 1.5) : BASE_FUD_COOLDOWN;
-                const fudRandomVariation = gameDifficulty === 'hard' ? 2500 : 5000;
+                // Decrease base cooldown time and random variation range for hard mode, moderated for mobile
+                const isHardMobile = gameDifficulty === 'hard' && IS_MOBILE;
+                const fudCooldown = isHardMobile ? (BASE_FUD_COOLDOWN / 1.2) : // Less aggressive reduction for mobile hard
+                                     (gameDifficulty === 'hard' ? (BASE_FUD_COOLDOWN / 1.5) : BASE_FUD_COOLDOWN);
+                const fudRandomVariation = isHardMobile ? 3500 : // Less variation for mobile hard
+                                            (gameDifficulty === 'hard' ? 2500 : 5000);
+
                 if (!rival.lastFudShot || now - rival.lastFudShot > (fudCooldown + Math.random() * fudRandomVariation)) {
                     shootFud(rival);
                     rival.lastFudShot = now;
