@@ -836,55 +836,40 @@
                          continue;
                      }
 
-                    // Check minimum distance from rivals' start positions
-                    let tooCloseToRival = false;
-                    for (const r of rivals) {
-                        if (!r.isDestroyed) {
-                            const distToRival = Math.sqrt(
-                                Math.pow(potentialX - r.startX, 2) +
-                                Math.pow(potentialY - r.startY, 2)
-                            );
-                            if (distToRival < r.width * 2) { // Use rival start position for consistency
-                                tooCloseToRival = true;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    // Check minimum distance from other collectibles
+                    // Check minimum distance from *already placed* collectibles
                     let tooCloseToCollectible = false;
                     for (const c of collectibles) {
                         const distToCollectible = Math.sqrt(
-                            Math.pow(potentialX - c.x, 2) + 
+                            Math.pow(potentialX - c.x, 2) +
                             Math.pow(potentialY - c.y, 2)
                         );
-                        if (distToCollectible < collectibleRadius * 2.5) { // Reduced from 3 to 2.5
+                        // Slightly more relaxed distance check on mobile if attempts are high
+                        const minDist = (isMobile && attempts > maxAttempts / 2) ? (collectibleRadius * 2) : (collectibleRadius * 2.5);
+                        if (distToCollectible < minDist) {
                             tooCloseToCollectible = true;
                             break;
                         }
                     }
-                    
-                    if (distToPlayerStart > player.width * 2 && 
-                        distToTarget > targetZone.radius * 1.5 && 
-                        !tooCloseToRival && 
-                        !tooCloseToCollectible) {
-                        
-                        collectibles.push({
-                            x: potentialX,
-                            y: potentialY,
-                            radius: collectibleRadius,
-                            collected: false,
-                            rotation: 0,
-                            rotationSpeed: 0.05 + Math.random() * 0.05,
-                            bobOffset: Math.random() * Math.PI * 2,
-                            bobSpeed: 0.05 + Math.random() * 0.05
-                        });
-                        
-                        usedCells.add(cellKey);
-                        placed = true;
+                    if (tooCloseToCollectible) {
+                        if (isMobile) console.log(`Attempt ${attempts + 1}: Placement (${potentialX.toFixed(0)}, ${potentialY.toFixed(0)}) failed: Too close to other collectible.`);
+                        attempts++;
+                        continue;
                     }
+
+                    // If all checks pass, place the collectible
+                    collectibles.push({
+                        x: potentialX,
+                        y: potentialY,
+                        radius: collectibleRadius,
+                        collected: false,
+                        rotation: 0,
+                        rotationSpeed: 0.05 + Math.random() * 0.05,
+                        bobOffset: Math.random() * Math.PI * 2,
+                        bobSpeed: 0.05 + Math.random() * 0.05
+                    });
                     
-                    attempts++;
+                    usedCells.add(cellKey);
+                    placed = true;
                 }
                 
                 if (!placed) {
