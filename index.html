@@ -1180,7 +1180,7 @@
                 // Add touchstart event listener with passive: false
                 skipButton.addEventListener('touchstart', handleSkip, { passive: false });
                 
-                // Only add click handler for non-touch devices
+                // Add click handler for non-touch devices
                 if (!('ontouchstart' in window)) {
                     skipButton.addEventListener('click', handleSkip);
                 }
