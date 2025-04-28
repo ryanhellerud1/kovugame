@@ -48,7 +48,16 @@
             background: linear-gradient(135deg, #16213e, #0f3460);
             overflow: hidden; /* Clip canvas/elements */
         }
-        #gameCanvas { display: block; width: 100%; height: 100%; border-radius: 10px; }
+        #gameCanvas { 
+            display: none; /* Hide by default */
+            width: 100%; 
+            height: 100%; 
+            border-radius: 10px; 
+        }
+        /* Show canvas only when game is playing */
+        #gameCanvas.playing { 
+            display: block; 
+        }
         /* Overlays */
         #intro-overlay, #level-transition-overlay, #win-message, #game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; z-index: 100; padding: 20px; border-radius: 10px; transition: opacity 0.5s ease; box-sizing: border-box; }
         #intro-overlay { display: flex; opacity: 1; }
@@ -1237,6 +1246,9 @@
             gameOverOverlay.style.display = 'none';
             gameOverOverlay.style.opacity = 0;
             
+            // Show the game canvas
+            canvas.classList.add('playing');
+            
             // Reset game state before setup
             resetGameState(currentLevel - 1);
             
@@ -1264,7 +1276,13 @@
                 kccStatusElement.innerHTML = '🟢<span>LIVE</span>';
                 kccStatusElement.classList.add('live');
                 lastTimestamp = performance.now(); // Initialize timestamp for delta time
-                 if (animationFrameId) cancelAnimationFrame(animationFrameId); gameLoop(); console.log("Game Started - Level", currentLevel); }).catch(err => { console.error("Error during setupGame in proceedWithGameStart:", err); }); }
+                if (animationFrameId) cancelAnimationFrame(animationFrameId); 
+                gameLoop(); 
+                console.log("Game Started - Level", currentLevel); 
+            }).catch(err => { 
+                console.error("Error during setupGame in proceedWithGameStart:", err); 
+            }); 
+        }
         function restartGame() { /* ... Unchanged ... */ winMessage.style.display = 'none'; winMessage.style.opacity = 0; gameOverOverlay.style.display = 'none'; gameOverOverlay.style.opacity = 0; startGame(); }
         function resetGameState(levelIndex) { /* ... Unchanged ... */ const levelConf = levelConfigs[levelIndex]; if (!levelConf) return; player.isDashing = false; player.lastDashTime = 0; player.dashParticles = []; player.isFiringLaser = false; player.lastLaserTime = 0; player.isInvulnerable = false; player.lastHitTime = 0; /* tapDashActive removed */ rivals.forEach(rival => { rival.isDestroyed = false; rival.hazardActive = false; rival.isInWarning = false; rival.hazardFeedbackGiven = false; rival.dodgeFeedbackGiven = false; if (rival.hazardElement) { rival.hazardElement.classList.remove('active', 'warning'); rival.hazardElement.style.opacity = 0; if (!rival.hazardElement.parentNode) { gameContainer.appendChild(rival.hazardElement); } } }); approvalMeter.value = 10; feedbackArea.innerHTML = ''; halfwayReached = false; particles.length = 0; collectiblesCollected = 0; isTargetZoneActive = false; if(targetZone.element) targetZone.element.classList.remove('active'); }
 
