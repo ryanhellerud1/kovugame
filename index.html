@@ -84,11 +84,12 @@
             border: 2px solid #ff8c42; 
             font-size: 0.6rem; 
             padding: 6px 12px; 
-            z-index: 101; 
+            z-index: 101;
+            transition: none; /* Remove transition */
         }
         #skip-intro-button:hover { 
-            background: rgba(0, 0, 0, 0.7); 
-            border-color: #ff6347; 
+            background: rgba(0, 0, 0, 0.5); /* Keep same background */
+            border-color: #ff8c42; /* Keep same border color */
         }
         /* UI */
         #ui-container { position: absolute; top: 5px; left: 5px; right: 5px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; z-index: 50; font-size: 0.6rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); }
