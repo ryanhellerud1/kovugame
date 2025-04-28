@@ -288,7 +288,7 @@
             <div id="tutorial-overlay" style="display: none;">
                 <div class="tutorial-panel" id="tutorial-1" data-panel="1">
                     <h2>Welcome to the Arena!</h2>
-                    <p>Your goal is to collect data packets while avoiding hazards and rivals.</p>
+                    <p>Your goal is to collect collectible coins while avoiding hazards and rivals.</p>
                     <div class="hazard-demo" style="top: 30%; left: 50%; transform: translate(-50%, -50%);"></div>
                     <p>Watch out for red hazard zones! They'll drain your approval rating.</p>
                     <button data-next="2">Next</button>
@@ -302,7 +302,7 @@
                 </div>
                 <div class="tutorial-panel" id="tutorial-3" data-panel="3">
                     <h2>Gameplay Tips</h2>
-                    <p>Collect all data packets to activate the target zone.</p>
+                    <p>Collect all collectible coins to activate the target zone.</p>
                     <p>Destroy rivals to clear your path.</p>
                     <p>Keep your approval rating above zero!</p>
                     <button data-next="start">Begin!</button>
@@ -633,7 +633,7 @@
         const collectibleWidth = 20; // Increased width for coins
         const collectibleHeight = 20; // Increased height for coins
         const particles = [];
-        const feedbackMessages = [ /* ... Unchanged ... */ { trigger: 'dash', text: '#KovuBoost!', approval: 3, sound: 'dash' }, { trigger: 'halfway', text: 'Looking good! #Progress', approval: 5, sound: 'feedbackPositive', note: 'G4' }, { trigger: 'dodge', text: 'Nice dodge! #Skillz', approval: 4, sound: 'feedbackPositive', note: 'A4' }, { trigger: 'hazard_hit', text: 'Hazard Hit! Approval Lost!', approval: -15, sound: 'playerHit', negative: true }, { trigger: 'rival_collision', text: 'Collision! Ouch!', approval: -10, sound: 'playerHit', negative: true }, { trigger: 'collect', text: 'Data Packet! +Approval!', approval: 5, sound: 'collect', note: 'C5' }, { trigger: 'destroy_rival', text: 'Rival Deleted! #LaserFocus', approval: 10, sound: 'rivalDestroyed' }, { trigger: 'win', text: '#Victory! Community Morale Soaring!', approval: 20, sound: 'win', note: 'C5' }, { trigger: 'fud_hit', text: 'FUD Attack! -10% Approval!', approval: -10, sound: 'playerHit', negative: true } ];
+        const feedbackMessages = [ /* ... Unchanged ... */ { trigger: 'dash', text: '#KovuBoost!', approval: 3, sound: 'dash' }, { trigger: 'halfway', text: 'Looking good! #Progress', approval: 5, sound: 'feedbackPositive', note: 'G4' }, { trigger: 'dodge', text: 'Nice dodge! #Skillz', approval: 4, sound: 'feedbackPositive', note: 'A4' }, { trigger: 'hazard_hit', text: 'Hazard Hit! Approval Lost!', approval: -15, sound: 'playerHit', negative: true }, { trigger: 'rival_collision', text: 'Collision! Ouch!', approval: -10, sound: 'playerHit', negative: true }, { trigger: 'collect', text: 'Collectible Coin! +Approval!', approval: 5, sound: 'collect', note: 'C5' }, { trigger: 'destroy_rival', text: 'Rival Deleted! #LaserFocus', approval: 10, sound: 'rivalDestroyed' }, { trigger: 'win', text: '#Victory! Community Morale Soaring!', approval: 20, sound: 'win', note: 'C5' }, { trigger: 'fud_hit', text: 'FUD Attack! -10% Approval!', approval: -10, sound: 'playerHit', negative: true } ];
         let halfwayReached = false;
 
         // --- Initialization --- (Unchanged functions: loadSvg, createDisintegrationEffect)
