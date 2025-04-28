@@ -1177,9 +1177,13 @@
                 skipButton.removeEventListener('touchstart', handleSkip);
                 skipButton.removeEventListener('click', handleSkip);
                 
-                // Add new event listeners with passive: false
+                // Add touchstart event listener with passive: false
                 skipButton.addEventListener('touchstart', handleSkip, { passive: false });
-                skipButton.addEventListener('click', handleSkip);
+                
+                // Only add click handler for non-touch devices
+                if (!('ontouchstart' in window)) {
+                    skipButton.addEventListener('click', handleSkip);
+                }
             }
         }
         // Add mobile audio initialization function
