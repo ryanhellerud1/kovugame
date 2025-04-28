@@ -59,7 +59,25 @@
             display: block; 
         }
         /* Overlays */
-        #intro-overlay, #level-transition-overlay, #win-message, #game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; z-index: 100; padding: 20px; border-radius: 10px; transition: opacity 0.5s ease; box-sizing: border-box; }
+        #intro-overlay, #level-transition-overlay, #win-message, #game-over-overlay { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: #000000; /* Changed from rgba(0, 0, 0, 0.85) to solid black */
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            text-align: center; 
+            z-index: 100; 
+            padding: 20px; 
+            border-radius: 10px; 
+            transition: opacity 0.5s ease; 
+            box-sizing: border-box; 
+        }
         #intro-overlay { display: flex; opacity: 1; }
         #level-transition-overlay, #win-message, #game-over-overlay { display: none; opacity: 0; }
         .intro-panel { display: none; width: 80%; max-width: 500px; }
@@ -263,7 +281,25 @@
             #controls-hint { display: none; }
         }
 
-        #tutorial-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; z-index: 100; padding: 20px; border-radius: 10px; transition: opacity 0.5s ease; box-sizing: border-box; }
+        #tutorial-overlay { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: #000000; /* Changed from rgba(0, 0, 0, 0.85) to solid black */
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            text-align: center; 
+            z-index: 100; 
+            padding: 20px; 
+            border-radius: 10px; 
+            transition: opacity 0.5s ease; 
+            box-sizing: border-box; 
+        }
         .tutorial-panel { display: none; width: 80%; max-width: 500px; }
         .tutorial-panel.active { display: block; }
         .tutorial-panel img { max-width: 100%; height: auto; max-height: 150px; margin-bottom: 10px; border: 2px solid #4a4a8a; border-radius: 8px; }
