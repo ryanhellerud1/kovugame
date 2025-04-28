@@ -1159,7 +1159,12 @@
             if (skipButton) {
                 const handleSkip = (e) => {
                     e.preventDefault();
-                    e.stopPropagation(); // Prevent event bubbling
+                    e.stopPropagation();
+                    e.stopImmediatePropagation(); // Prevent any other handlers
+                    
+                    // Immediately hide the button to prevent visual feedback
+                    skipButton.style.display = 'none';
+                    
                     console.log("Skipping intro and tutorial - Initializing Audio...");
                     // Initialize Audio on user interaction
                     initializeMobileAudio().then(audioStarted => {
@@ -1177,6 +1182,7 @@
                 // Remove any existing event listeners
                 skipButton.removeEventListener('touchstart', handleSkip);
                 skipButton.removeEventListener('click', handleSkip);
+                skipButton.removeEventListener('touchend', handleSkip);
                 
                 // Add touchstart event listener with passive: false
                 skipButton.addEventListener('touchstart', handleSkip, { passive: false });
